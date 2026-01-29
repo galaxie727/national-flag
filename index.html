@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>国旗大戦（仮）</title>
+  <style>
+    :root{
+      --bg:#0b0d12;
+      --panel:#121521;
+      --line:rgba(255,255,255,.10);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
+    }
+    *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    html,body{ height:100%; margin:0; background:var(--bg); color:var(--text); font-family: system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; }
+    button{ font-family: inherit; }
+
+    /* ====== Layout ====== */
+    .app{
+      min-height:100%;
+      display:flex;
+      justify-content:center;
+      padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+    }
+    .phone{
+      width:min(440px, 100%);
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    /* ====== Scene (1枚絵) ====== */
+    .scene{
+      position:relative;
+      width:100%;
+      aspect-ratio: 2 / 3; /* スマホ縦 */
+      border-radius: 18px;
+      overflow:hidden;
+      background: #111;
+      box-shadow: 0 16px 45px rgba(0,0,0,.45);
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .scene img.bg{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:cover;
+      filter: saturate(1.02) contrast(1.02);
+      transform: translateZ(0);
+    }
+
+    /* ====== Speech bubble (オーバーレイ) ====== */
+    .speech{
+      position:absolute;
+      left: 8%;
+      top: 40%;
+      width: 78%;
+      max-width: 360px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.92);
+      color: rgba(0,0,0,.85);
+      font-weight: 700;
+      letter-spacing: .02em;
+      line-height: 1.25;
+      box-shadow: 0 10px 26px rgba(0,0,0,.18);
+      backdrop-filter: blur(6px);
+    }
+    .speech:after{
+      content:"";
+      position:absolute;
+      left: 14%;
+      bottom: -10px;
+      width: 18px; height: 18px;
+      background: rgba(255,255,255,.92);
+      transform: rotate(45deg);
+      border-radius: 4px;
+    }
+
+    /* ====== Flag overlay (紙の上に差し替え) ======
+       ここは後で微調整する前提。まず動くことを優先。
+       --fw/--fh/--fx/--fy で位置とサイズ調整できる。
+    */
+    .flagWrap{
+      --fx: 15%;
+      --fy: 60.5%;
+      --fw: 70%;
+      --fh: 23%;
+      position:absolute;
+      left: var(--fx);
+      top:  var(--fy);
+      width: var(--fw);
+      height: var(--fh);
+      border-radius: 6px;
+      overflow:hidden;
+      transform: perspective(700px) rotateX(2deg);
+      box-shadow: 0 10px 18px rgba(0,0,0,.12);
+      background: rgba(255,255,255,.95);
+    }
+    .flagWrap img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transform: translateZ(0);
+    }
+    /* 紙っぽさ（薄いノイズ） */
+    .flagWrap:before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(0,0,0,.05), transparent 42%),
+        radial-gradient(circle at 80% 60%, rgba(0,0,0,.04), transparent 45%),
+        linear-gradient(0deg, rgba(0,0,0,.03), rgba(0,0,0,0));
+      mix-blend-mode: multiply;
+      pointer-events:none;
+      opacity:.35;
+    }
+
+    /* ====== HUD ====== */
+    .hud{
+      position:absolute;
+      right: 10px;
+      bottom: 10px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.90);
+      font-weight: 700;
+      letter-spacing: .04em;
+      font-size: 12px;
+      backdrop-filter: blur(6px);
+    }
+
+    /* ====== Choices ====== */
+    .choices{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .btn{
+      height: 54px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.92);
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      box-shadow: 0 10px 18px rgba(0,0,0,.22);
+      transition: transform .08s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
+      cursor:pointer;
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn[disabled]{ opacity:.45; cursor:default; }
+    .btn.correct{
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.35);
+    }
+    .btn.wrong{
+      background: rgba(255,255,255,.03);
+      border-color: rgba(255,255,255,.10);
+    }
+
+    /* 正解フラッシュ（控えめ） */
+    .flash{
+      position:absolute; inset:0;
+      background: rgba(255,255,255,.0);
+      pointer-events:none;
+      transition: background .16s ease;
+    }
+    .flash.on{ background: rgba(255,255,255,.14); }
+
+    /* ====== Bottom bar ====== */
+    .bar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .meta{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .meta .label{ font-size: 11px; color: var(--muted); letter-spacing: .08em; }
+    .meta .value{ font-weight: 900; letter-spacing: .06em; }
+    .pill{
+      display:flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.86);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: .06em;
+      user-select:none;
+    }
+    .tinyBtn{
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.92);
+      font-weight: 800;
+      letter-spacing:.06em;
+    }
+
+    /* 結果パネル（簡易） */
+    .modal{
+      position: fixed; inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 24px 12px;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(6px);
+    }
+    .modal.on{ display:flex; }
+    .card{
+      width:min(420px, 100%);
+      border-radius: 18px;
+      background: rgba(15,18,28,.96);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 24px 60px rgba(0,0,0,.5);
+      padding: 18px;
+    }
+    .card h2{ margin:0 0 8px; font-size: 18px; letter-spacing:.06em; }
+    .card p{ margin:0 0 14px; color: var(--muted); line-height:1.5; }
+    .row{ display:flex; gap:10px; }
+    .row button{ flex:1; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="phone">
+
+      <div class="scene" id="scene">
+        <!-- ここをあなたの画像ファイル名にする -->
+        <!-- 例: chi_flag_base.png など -->
+        <img class="bg" id="bg" src="chi_base.png" alt="チー娘" />
+
+        <!-- 紙の上に国旗を重ねる -->
+        <div class="flagWrap" id="flagWrap" aria-label="flag">
+          <!-- 国旗画像（svg/png/jpg） -->
+          <img id="flagImg" src="flags/jp.png" alt="flag" />
+        </div>
+
+        <!-- 吹き出し -->
+        <div class="speech" id="speech">この国、わかる？</div>
+
+        <!-- 控えめフラッシュ -->
+        <div class="flash" id="flash"></div>
+
+        <!-- HUD（STAGE） -->
+        <div class="hud" id="hud">STAGE 1</div>
+      </div>
+
+      <div class="choices" id="choices">
+        <button class="btn" data-i="0">日本</button>
+        <button class="btn" data-i="1">中国</button>
+        <button class="btn" data-i="2">韓国</button>
+        <button class="btn" data-i="3">タイ</button>
+      </div>
+
+      <div class="bar">
+        <div class="meta">
+          <div class="label">MODE</div>
+          <div class="value">SOLO</div>
+        </div>
+
+        <div class="pill" id="timerPill">TIME <span id="time">6.0</span>s</div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="tinyBtn" id="retryBtn">RETRY</button>
+          <button class="tinyBtn" id="tuneBtn" title="紙の上の国旗位置を微調整（開発用）">TUNE</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 結果モーダル（最小） -->
+  <div class="modal" id="modal">
+    <div class="card">
+      <h2 id="resultTitle">RESULT</h2>
+      <p id="resultText">到達STAGE：1</p>
+      <div class="row">
+        <button class="btn" id="againBtn">もう一回</button>
+        <button class="btn" id="closeBtn">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       設定（最低限）
+       ========================= */
+
+    // 吹き出し文言（短文・評価なし）
+    const SPEECH = [
+      "この国、わかる？",
+      "国名、選んで。",
+      "どこだと思う？",
+      "これ、どこ？"
+    ];
+    const SPEECH_OK = ["……うん", "……", "うん。"];
+    const SPEECH_NG = ["……", "……", "……。"];
+
+    // まずはサンプル5問（後で増やす）
+    // flag: 画像パス / correct: 正解国名 / choices: 4択（文字だけ）
+    const QUESTIONS = [
+      { flag: "flags/jp.png", correct: "日本", choices: ["日本","中国","韓国","タイ"] },
+      { flag: "flags/us.png", correct: "アメリカ", choices: ["アメリカ","イギリス","フランス","ロシア"] },
+      { flag: "flags/fr.png", correct: "フランス", choices: ["イタリア","フランス","オランダ","ルクセンブルク"] },
+      { flag: "flags/br.png", correct: "ブラジル", choices: ["アルゼンチン","ブラジル","ポルトガル","メキシコ"] },
+      { flag: "flags/au.png", correct: "オーストラリア", choices: ["ニュージーランド","イギリス","オーストラリア","フィジー"] },
+    ];
+
+    // 1問の制限時間（秒）
+    const TIME_LIMIT = 6.0;
+
+    /* =========================
+       状態
+       ========================= */
+    let stage = 1;
+    let qIndex = 0;
+    let timeLeft = TIME_LIMIT;
+    let ticking = null;
+    let locked = false;
+
+    const els = {
+      flagImg: document.getElementById("flagImg"),
+      speech: document.getElementById("speech"),
+      hud: document.getElementById("hud"),
+      flash: document.getElementById("flash"),
+      choices: document.getElementById("choices"),
+      time: document.getElementById("time"),
+      retryBtn: document.getElementById("retryBtn"),
+      tuneBtn: document.getElementById("tuneBtn"),
+      flagWrap: document.getElementById("flagWrap"),
+      modal: document.getElementById("modal"),
+      resultTitle: document.getElementById("resultTitle"),
+      resultText: document.getElementById("resultText"),
+      againBtn: document.getElementById("againBtn"),
+      closeBtn: document.getElementById("closeBtn"),
+    };
+
+    function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    function setSpeech(text){
+      els.speech.textContent = text;
+    }
+
+    function setStage(n){
+      stage = n;
+      els.hud.textContent = `STAGE ${stage}`;
+    }
+
+    function setButtons(labels){
+      const btns = [...els.choices.querySelectorAll(".btn")];
+      btns.forEach((b, i) => {
+        b.textContent = labels[i];
+        b.classList.remove("correct","wrong");
+        b.disabled = false;
+      });
+    }
+
+    function lockButtons(on){
+      locked = on;
+      const btns = [...els.choices.querySelectorAll(".btn")];
+      btns.forEach(b => b.disabled = on);
+    }
+
+    function flash(){
+      els.flash.classList.add("on");
+      setTimeout(()=>els.flash.classList.remove("on"), 140);
+    }
+
+    function startTimer(){
+      stopTimer();
+      timeLeft = TIME_LIMIT;
+      els.time.textContent = timeLeft.toFixed(1);
+      const last = performance.now();
+      let prev = last;
+
+      ticking = requestAnimationFrame(function tick(now){
+        const dt = (now - prev) / 1000;
+        prev = now;
+        timeLeft -= dt;
+        if(timeLeft < 0) timeLeft = 0;
+        els.time.textContent = timeLeft.toFixed(1);
+
+        if(timeLeft <= 0){
+          // タイムアップ＝不正解扱い（評価しない）
+          onTimeout();
+          return;
+        }
+        ticking = requestAnimationFrame(tick);
+      });
+    }
+
+    function stopTimer(){
+      if(ticking){
+        cancelAnimationFrame(ticking);
+        ticking = null;
+      }
+    }
+
+    function loadQuestion(){
+      const q = QUESTIONS[qIndex % QUESTIONS.length];
+      els.flagImg.src = q.flag;
+      setButtons(q.choices);
+      setSpeech(rand(SPEECH));
+      lockButtons(false);
+      startTimer();
+    }
+
+    function nextQuestion(correct){
+      // 正解なら次ステージへ。不正解でもソロ版は続けてもいいが、
+      // まずは「不正解＝終了」にして手触りを作る（後で変更可）
+      if(correct){
+        setStage(stage + 1);
+        qIndex++;
+        setTimeout(loadQuestion, 220);
+      }else{
+        endRun();
+      }
+    }
+
+    function onTimeout(){
+      stopTimer();
+      lockButtons(true);
+      setSpeech(rand(SPEECH_NG));
+      endRun();
+    }
+
+    function onPick(label, btn){
+      if(locked) return;
+      lockButtons(true);
+      stopTimer();
+
+      const q = QUESTIONS[qIndex % QUESTIONS.length];
+      const ok = (label === q.correct);
+
+      if(ok){
+        btn.classList.add("correct");
+        flash();
+        setSpeech(rand(SPEECH_OK));
+        setTimeout(()=> nextQuestion(true), 260);
+      }else{
+        btn.classList.add("wrong");
+        setSpeech(rand(SPEECH_NG));
+        setTimeout(()=> nextQuestion(false), 260);
+      }
+    }
+
+    function endRun(){
+      stopTimer();
+      lockButtons(true);
+
+      // 到達STAGEは「今のstage」を表示（次に進む前の値）
+      els.resultTitle.textContent = "RESULT";
+      els.resultText.textContent = `到達STAGE：${stage}`;
+
+      // ほんの少し遅らせて出す（手触り）
+      setTimeout(()=> els.modal.classList.add("on"), 180);
+    }
+
+    function resetRun(){
+      els.modal.classList.remove("on");
+      setStage(1);
+      qIndex = 0;
+      loadQuestion();
+    }
+
+    /* ====== イベント ====== */
+    els.choices.addEventListener("click", (e) => {
+      const btn = e.target.closest(".btn");
+      if(!btn) return;
+      const label = btn.textContent.trim();
+      onPick(label, btn);
+    });
+
+    els.retryBtn.addEventListener("click", resetRun);
+    els.againBtn.addEventListener("click", resetRun);
+    els.closeBtn.addEventListener("click", ()=> els.modal.classList.remove("on"));
+
+    /* ====== TUNE（開発用：紙の上の国旗位置微調整） ======
+       クリックで位置/サイズを少しずつ変えられる。
+       画用紙の上にピッタリ来るように --fx/--fy/--fw/--fh を調整してね。
+    */
+    let tuneMode = false;
+    els.tuneBtn.addEventListener("click", ()=>{
+      tuneMode = !tuneMode;
+      els.tuneBtn.textContent = tuneMode ? "TUNE*" : "TUNE";
+      els.tuneBtn.style.opacity = tuneMode ? "1" : "";
+    });
+
+    window.addEventListener("keydown", (e)=>{
+      if(!tuneMode) return;
+
+      const wrap = els.flagWrap;
+      const st = getComputedStyle(wrap);
+      const fx = parseFloat(st.getPropertyValue("--fx"));
+      const fy = parseFloat(st.getPropertyValue("--fy"));
+      const fw = parseFloat(st.getPropertyValue("--fw"));
+      const fh = parseFloat(st.getPropertyValue("--fh"));
+
+      const step = e.shiftKey ? 0.5 : 0.2;
+
+      let nfx=fx, nfy=fy, nfw=fw, nfh=fh;
+      if(e.key === "ArrowLeft")  nfx = fx - step;
+      if(e.key === "ArrowRight") nfx = fx + step;
+      if(e.key === "ArrowUp")    nfy = fy - step;
+      if(e.key === "ArrowDown")  nfy = fy + step;
+
+      // + / - でサイズ
+      if(e.key === "+" || e.key === "=") { nfw = fw + step; nfh = fh + step*0.35; }
+      if(e.key === "-" || e.key === "_") { nfw = fw - step; nfh = fh - step*0.35; }
+
+      wrap.style.setProperty("--fx", nfx + "%");
+      wrap.style.setProperty("--fy", nfy + "%");
+      wrap.style.setProperty("--fw", nfw + "%");
+      wrap.style.setProperty("--fh", nfh + "%");
+
+      // 現在値を吹き出しに表示（開発用）
+      setSpeech(`TUNE fx:${nfx.toFixed(1)} fy:${nfy.toFixed(1)} fw:${nfw.toFixed(1)} fh:${nfh.toFixed(1)}`);
+    });
+
+    /* =========================
+       起動
+       ========================= */
+    setStage(1);
+    loadQuestion();
+  </script>
+
+  <!--
+    ===== 使い方メモ =====
+    1) 背景画像（チー娘+紙）を用意して、この行を変える:
+       <img class="bg" id="bg" src="chi_base.png" ...>
+
+    2) 国旗画像を用意して flags/ に置く（例: jp.png, us.png...）
+       QUESTIONS の flag パスを合わせる。
+
+    3) 国旗が紙の上に合わない場合は:
+       .flagWrap の --fx/--fy/--fw/--fh を調整。
+       もしくは TUNE を押して、キーボードで微調整：
+       矢印：位置、 + / - ：サイズ、Shift併用で大きく動く
+  -->
+</body>
+</html>
