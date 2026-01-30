@@ -4,64 +4,49 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>国旗どこだと思う？</title>
+
   <style>
     :root{
-      /* ====== ここだけ触ればレイアウト微調整できる（最重要） ====== */
-      --paper-left: 8vw;
-      --paper-top: 3.5vh;
-      --paper-width: 84vw;
-      --paper-height: 28vh;
+      /* ========= 調整しやすい変数 ========= */
+      --bg-image: url("chi_base.png");
 
-      /* 旗の内側余白（上下左右を均等に“白”で残す） */
+      /* 旗(画用紙) */
+      --paper-left: 6vw;
+      --paper-top: calc(56px + env(safe-area-inset-top) + 8px); /* 上メニューの下に逃がす */
+      --paper-width: 88vw;
+      --paper-height: 30vh;
       --paper-padding: 3.2vmin;
 
-      /* 吹き出し位置 */
-      --bubble-left: 6vw;
-      --bubble-top: 14vh;
-      --bubble-width: 88vw;
+      /* 吹き出し（最上部・透明） */
+      --bubble-top: calc(env(safe-area-inset-top) + 8px);
+      --bubble-left: 4vw;
+      --bubble-width: 92vw;
 
-      /* 選択肢全体の位置 */
-      --choices-bottom: 7vh;
-
-      /* 選択肢ボタンの高さ（“もう少し高さを無くす”） */
+      /* 選択肢（最下部） */
+      --choices-bottom: calc(env(safe-area-inset-bottom) + 14px);
       --choice-height: 10.5vh;
       --choice-font: clamp(18px, 4.2vw, 26px);
-
-      /* 画像ファイル名（固定） */
-      --bg-image: url("chi_base.png");
-      /* ======================================================= */
+      /* =================================== */
     }
 
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#000; }
     button{ font-family:inherit; }
-
-    /* 画面全体 */
-    .screen{
-      position:relative;
-      width:100%;
-      height:100svh;
-      overflow:hidden;
-      background:#000;
-    }
+    .screen{ position:relative; width:100%; height:100svh; overflow:hidden; background:#000; }
 
     /* 背景（女の子） */
     .bg{
-      position:absolute;
-      inset:0;
+      position:absolute; inset:0;
       background-image: var(--bg-image);
       background-size: cover;
       background-position: center;
-      filter: none;
       z-index: 1;
     }
 
-    /* 上部メニュー（外に出す＆小さめ） */
+    /* ============ 上メニュー（外） ============ */
     .topbar{
       position:fixed;
-      left:0;
-      right:0;
-      top:0;
+      left:0; right:0; top:0;
       padding-top: env(safe-area-inset-top);
       padding-left: 12px;
       padding-right: 12px;
@@ -69,27 +54,24 @@
       display:flex;
       align-items:center;
       gap:10px;
-      z-index: 50;
-      background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,0));
-      pointer-events: none; /* バー自体は透過、ボタンだけ有効 */
+      z-index: 100;
+      /* “外”感：背景はほぼ無し、文字だけ浮く感じ */
+      background: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
+      pointer-events:none;
     }
-    .topbar .pill,
-    .topbar .iconbtn{
-      pointer-events: auto;
-    }
+    .topbar .pill, .topbar .iconbtn{ pointer-events:auto; }
+
     .iconbtn{
       width:42px; height:42px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.35);
       display:grid;
       place-items:center;
       color:#fff;
       cursor:pointer;
     }
-    .iconbtn .lines{
-      width:18px; height:12px; position:relative;
-    }
+    .iconbtn .lines{ width:18px; height:12px; position:relative; }
     .iconbtn .lines span{
       position:absolute; left:0; right:0; height:2px;
       background:#fff; border-radius:2px; opacity:.9;
@@ -101,8 +83,8 @@
     .pill{
       height:42px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.35);
       color:#fff;
       display:flex;
       align-items:center;
@@ -112,6 +94,7 @@
       text-transform: uppercase;
       font-size:12px;
       white-space:nowrap;
+      backdrop-filter: blur(6px);
     }
     .pill b{
       letter-spacing:.06em;
@@ -125,57 +108,53 @@
     }
     .spacer{ flex:1; }
 
-    /* 吹き出し */
+    /* ============ 吹き出し（最上・透明） ============ */
     .bubble{
-      position:absolute;
+      position:fixed;
       left: var(--bubble-left);
       top: var(--bubble-top);
       width: var(--bubble-width);
-      max-width: 560px;
-      background: rgba(245,245,245,.92);
-      border-radius: 28px;
-      padding: 18px 18px 18px 22px;
-      box-shadow: 0 14px 40px rgba(0,0,0,.25);
-      z-index: 20;
-    }
-    .bubble::after{
-      content:"";
-      position:absolute;
-      left: 34px;
-      bottom: -14px;
-      width:0; height:0;
-      border-left: 14px solid transparent;
-      border-right: 14px solid transparent;
-      border-top: 14px solid rgba(245,245,245,.92);
-      filter: drop-shadow(0 10px 10px rgba(0,0,0,.15));
+      max-width: 760px;
+      z-index: 90;
+
+      /* 透明にする（文字だけ） */
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+      padding: 10px 8px 6px 8px;
+      pointer-events:none; /* 触れない */
     }
     .bubble .q{
-      font-size: clamp(26px, 5.2vw, 40px);
+      margin:0;
+      font-size: clamp(26px, 6.2vw, 44px);
       font-weight: 900;
       letter-spacing: .02em;
-      margin: 0;
-      color:#111;
+      color: rgba(255,255,255,.92);
+      /* 黒背景でも女の子背景でも読める縁取り */
+      text-shadow:
+        0 2px 8px rgba(0,0,0,.55),
+        0 1px 0 rgba(0,0,0,.35);
     }
     .stageBadge{
       position:absolute;
-      right: 12px;
-      top: 10px;
-      height: 44px;
-      min-width: 128px;
-      padding: 0 18px;
+      right: 0;
+      top: 0;
+      height: 38px;
+      min-width: 118px;
+      padding: 0 16px;
       border-radius: 999px;
-      background: rgba(120,120,120,.85);
-      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.14);
       display:flex;
       align-items:center;
       justify-content:center;
       color:#fff;
       font-weight: 800;
       letter-spacing: .18em;
-      z-index: 21;
+      backdrop-filter: blur(6px);
     }
 
-    /* 画用紙（旗表示エリア） */
+    /* ============ 画用紙（旗） ============ */
     .paper{
       position:absolute;
       left: var(--paper-left);
@@ -183,13 +162,14 @@
       width: var(--paper-width);
       height: var(--paper-height);
       border-radius: 26px;
-      background: rgba(250,250,250,.90);
+      background: rgba(250,250,250,.88);
       box-shadow: 0 22px 60px rgba(0,0,0,.25);
-      z-index: 15;
+      z-index: 20;
       display:flex;
       align-items:center;
       justify-content:center;
       overflow:hidden;
+      backdrop-filter: blur(6px);
     }
     .paper .inner{
       width:100%;
@@ -202,21 +182,21 @@
     .paper .flag{
       width:100%;
       height:100%;
-      object-fit: contain;        /* 余白が均等に残る */
-      object-position: center;    /* 中央寄せ */
+      object-fit: contain;
+      object-position: center;
       border-radius: 14px;
       background: #fff;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
     }
 
-    /* 下部の選択肢 */
+    /* ============ 選択肢（最下部に張り付け） ============ */
     .choicesWrap{
-      position:absolute;
+      position:fixed;
       left: 0;
       right: 0;
       bottom: var(--choices-bottom);
       padding: 0 16px;
-      z-index: 30;
+      z-index: 80;
     }
     .choices{
       display:grid;
@@ -228,8 +208,8 @@
     .choice{
       height: var(--choice-height);
       border-radius: 26px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.62);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.55);
       color:#fff;
       font-size: var(--choice-font);
       font-weight: 900;
@@ -237,42 +217,41 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      box-shadow: 0 18px 40px rgba(0,0,0,.25);
+      box-shadow: 0 18px 40px rgba(0,0,0,.22);
       cursor:pointer;
       user-select:none;
+      backdrop-filter: blur(6px);
     }
-    .choice:active{
-      transform: translateY(1px);
-      background: rgba(0,0,0,.72);
-    }
+    .choice:active{ transform: translateY(1px); background: rgba(0,0,0,.65); }
 
-    /* レスポンシブ微調整 */
-    @media (min-height: 820px){
-      :root{
-        --choice-height: 10vh;
-        --choices-bottom: 8vh;
-      }
-    }
-
-    /* トースト（軽い通知） */
+    /* トースト */
     .toast{
       position:fixed;
       left:50%;
       transform:translateX(-50%);
-      bottom: calc(18px + env(safe-area-inset-bottom));
-      background: rgba(0,0,0,.78);
+      bottom: calc(var(--choices-bottom) + var(--choice-height) + 12px);
+      background: rgba(0,0,0,.72);
       color:#fff;
       padding: 10px 14px;
       border-radius: 999px;
-      border:1px solid rgba(255,255,255,.16);
-      font-weight:700;
-      letter-spacing:.04em;
-      z-index: 80;
+      border:1px solid rgba(255,255,255,.14);
+      font-weight:800;
+      letter-spacing:.06em;
+      z-index: 120;
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
+      backdrop-filter: blur(8px);
     }
     .toast.show{ opacity:1; }
+
+    /* 小さい端末での詰め */
+    @media (max-height: 740px){
+      :root{
+        --paper-height: 28vh;
+        --choice-height: 10vh;
+      }
+    }
   </style>
 </head>
 
@@ -280,7 +259,7 @@
   <div class="screen" id="screen">
     <div class="bg" aria-hidden="true"></div>
 
-    <!-- 上部メニュー（外） -->
+    <!-- 上メニュー（外） -->
     <div class="topbar">
       <button class="iconbtn" id="menuBtn" aria-label="menu">
         <div class="lines"><span></span><span></span><span></span></div>
@@ -296,7 +275,7 @@
       </button>
     </div>
 
-    <!-- 吹き出し -->
+    <!-- 吹き出し（透明・最上部） -->
     <div class="bubble">
       <p class="q" id="questionText">どこだと思う？</p>
       <div class="stageBadge" id="stageBadge">STAGE 1</div>
@@ -309,7 +288,7 @@
       </div>
     </div>
 
-    <!-- 選択肢 -->
+    <!-- 選択肢（最下部） -->
     <div class="choicesWrap">
       <div class="choices" id="choices"></div>
     </div>
@@ -318,11 +297,6 @@
   </div>
 
   <script>
-    /********************
-     * データ（とりあえず例）
-     * 旗画像は /flags/ に置く想定（例: flags/japan.png）
-     * あなたの実データに差し替えてOK
-     ********************/
     const FLAGS = [
       { name: "日本", src: "flags/japan.png" },
       { name: "アメリカ", src: "flags/usa.png" },
@@ -340,10 +314,7 @@
       { name: "メキシコ", src: "flags/mexico.png" },
     ];
 
-    /********************
-     * 状態
-     ********************/
-    const STAGES_TOTAL = 25; // とりあえず
+    const STAGES_TOTAL = 25;
     let stage = 1;
     let currentAnswer = null;
     let timerId = null;
@@ -359,7 +330,6 @@
     const elToast = document.getElementById("toast");
 
     function randInt(n){ return Math.floor(Math.random()*n); }
-
     function shuffle(arr){
       const a = arr.slice();
       for(let i=a.length-1;i>0;i--){
@@ -368,26 +338,19 @@
       }
       return a;
     }
-
     function pick4(){
       const base = shuffle(FLAGS);
       const chosen = base.slice(0,4);
       const answer = chosen[randInt(4)];
       return { chosen, answer };
     }
-
-    function setStageUI(){
-      elStage.textContent = `STAGE ${stage}`;
-    }
+    function setStageUI(){ elStage.textContent = `STAGE ${stage}`; }
 
     function renderQuestion(){
       const { chosen, answer } = pick4();
       currentAnswer = answer;
-
-      // 旗表示
       elFlag.src = answer.src;
 
-      // 選択肢
       elChoices.innerHTML = "";
       chosen.forEach(item=>{
         const btn = document.createElement("button");
@@ -416,13 +379,11 @@
         elTime.textContent = t.toFixed(1);
       }, 100);
     }
-
     function stopTimer(){
       running = false;
       if(timerId) clearInterval(timerId);
       timerId = null;
     }
-
     function resetGame(){
       stopTimer();
       stage = 1;
@@ -430,13 +391,11 @@
       renderQuestion();
       startTimer();
     }
-
     function nextStage(){
       stage++;
       if(stage > STAGES_TOTAL){
         stopTimer();
         toast("CLEAR");
-        // ここでリザルト画面に遷移したいなら追加
         return;
       }
       renderQuestion();
@@ -445,32 +404,20 @@
     function onChoice(item){
       if(!running) return;
       if(item.name === currentAnswer.name){
-        // 正解
         toast("ギュウ");
-        nextStage();
       }else{
-        // 不正解でも続けたいならこのまま、ゲームオーバーにしたいなら止める
         toast("…");
-        nextStage();
       }
+      nextStage();
     }
 
     elRetry.addEventListener("click", resetGame);
+    elMenu.addEventListener("click", ()=> toast("TUNEは後で"));
 
-    elMenu.addEventListener("click", ()=>{
-      toast("TUNEは後で");
-      // ここにモード切替や設定UIを載せていける
-    });
-
-    // 起動
     renderQuestion();
     startTimer();
 
-    // iOSの戻るでスクロール暴発対策（必要なら）
-    document.addEventListener("touchmove", (e)=>{
-      // 画面スクロールを基本禁止（ゲームなので）
-      e.preventDefault();
-    }, { passive:false });
+    document.addEventListener("touchmove", (e)=>{ e.preventDefault(); }, { passive:false });
   </script>
 </body>
 </html>
