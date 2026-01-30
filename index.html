@@ -1,450 +1,224 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>国旗どこだと思う？</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>国旗どこだと思う？</title>
 
-  <style>
-    :root{
-      /* ========= 調整しやすい変数 ========= */
-      --bg-image: url("chi_base.png");
+<style>
+:root{
+  --bg-image: url("chi_base.png");
 
-      /* 旗(画用紙) */
-      --paper-left: 6vw;
-      --paper-top: 8px;
-      --paper-width: 88vw;
-      --paper-height: 30vh;
-      --paper-padding: 3.2vmin;
+  --topbar-h: 56px;
 
-      /* 吹き出し（最上部・透明） */
-      --bubble-top: calc(env(safe-area-inset-top) + 8px);
-      --bubble-left: 4vw;
-      --bubble-width: 92vw;
+  --paper-top: calc(var(--topbar-h) + env(safe-area-inset-top) + 64px);
+  --paper-width: 88vw;
+  --paper-height: 30vh;
 
-      /* 選択肢（最下部） */
-      --choices-bottom: calc(env(safe-area-inset-bottom) + 14px);
-      --choice-height: 10.5vh;
-      --choice-font: clamp(18px, 4.2vw, 26px);
-      /* =================================== */
-    }
+  --choices-bottom: calc(env(safe-area-inset-bottom) + 14px);
+  --choice-height: 10.5vh;
+  --choice-font: clamp(18px,4.4vw,26px);
+}
 
-    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#000; }
-    button{ font-family:inherit; }
-    .screen{ position:relative; width:100%; height:100svh; overflow:hidden; background:#000; }
+*{ box-sizing:border-box; }
+html,body{
+  margin:0;
+  height:100%;
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background:#000;
+}
 
-    .bg{
+.screen{
+  position:relative;
+  height:100svh;
+  overflow:hidden;
+}
+
+/* ===== トップバー（タイマーのみ） ===== */
+.topbar{
+  position:fixed;
+  top:0; left:0; right:0;
+  height: calc(var(--topbar-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+}
+
+.timer{
+  color:#fff;
+  font-weight:900;
+  letter-spacing:.12em;
+  font-size:20px;
+}
+
+/* ===== 背景（トップバー下から） ===== */
+.bg{
   position:absolute;
-  top: calc(56px + env(safe-area-inset-top));
-  left: 0;
-  right: 0;
-  bottom: 0;
-
+  top: calc(var(--topbar-h) + env(safe-area-inset-top));
+  left:0; right:0; bottom:0;
   background-image: var(--bg-image);
   background-size: cover;
   background-position: center;
 }
 
-    .topbar{
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-
-  height: calc(56px + env(safe-area-inset-top));
-  padding-top: env(safe-area-inset-top);
-
-  background: #000; /* ←完全に黒 */
-  z-index: 1000;
+/* ===== 女の子文言（透明バブル） ===== */
+.bubble{
+  position:fixed;
+  top: calc(var(--topbar-h) + env(safe-area-inset-top) + 8px);
+  left:4vw;
+  width:92vw;
+  z-index:90;
+  pointer-events:none;
 }
-    .topbar .pill, .topbar .iconbtn{ pointer-events:auto; }
 
-    .iconbtn{
-      width:42px; height:42px;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.35);
-      display:grid;
-      place-items:center;
-      color:#fff;
-      cursor:pointer;
-    }
-    .iconbtn .lines{ width:18px; height:12px; position:relative; }
-    .iconbtn .lines span{
-      position:absolute; left:0; right:0; height:2px;
-      background:#fff; border-radius:2px; opacity:.9;
-    }
-    .iconbtn .lines span:nth-child(1){ top:0; }
-    .iconbtn .lines span:nth-child(2){ top:5px; width:14px; }
-    .iconbtn .lines span:nth-child(3){ bottom:0; width:18px; }
+.bubble p{
+  margin:0;
+  font-size: clamp(26px,6.2vw,44px);
+  font-weight:900;
+  color:#fff;
+  text-shadow:
+    0 2px 10px rgba(0,0,0,.6),
+    0 1px 0 rgba(0,0,0,.4);
+}
 
-    .pill{
-      height:42px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.35);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      padding:0 14px;
-      gap:10px;
-      letter-spacing:.18em;
-      text-transform: uppercase;
-      font-size:12px;
-      white-space:nowrap;
-      backdrop-filter: blur(6px);
-    }
-    .pill b{
-      letter-spacing:.06em;
-      font-size:18px;
-      font-weight:800;
-    }
-    .pill .small{
-      letter-spacing:.12em;
-      opacity:.85;
-      font-size:12px;
-    }
-    .spacer{ flex:1; }
+/* ===== 旗（画用紙） ===== */
+.paper{
+  position:absolute;
+  top: var(--paper-top);
+  left:6vw;
+  width: var(--paper-width);
+  height: var(--paper-height);
+  background: rgba(255,255,255,.9);
+  border-radius:26px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 22px 60px rgba(0,0,0,.25);
+}
 
-    /* ============ 吹き出し（最上・透明） ============ */
-    .bubble{
-      position:fixed;
-      left: var(--bubble-left);
-      top: var(--bubble-top);
-      width: var(--bubble-width);
-      max-width: 760px;
-      z-index: 90;
-      background: transparent;
-      box-shadow: none;
-      border-radius: 0;
-      padding: 10px 8px 6px 8px;
-      pointer-events:none;
-    }
-    .bubble .q{
-      margin:0;
-      font-size: clamp(26px, 6.2vw, 44px);
-      font-weight: 900;
-      letter-spacing: .02em;
-      color: rgba(255,255,255,.92);
-      text-shadow:
-        0 2px 8px rgba(0,0,0,.55),
-        0 1px 0 rgba(0,0,0,.35);
-    }
-    .stageBadge{
-      position:absolute;
-      right: 0;
-      top: 0;
-      height: 38px;
-      min-width: 118px;
-      padding: 0 16px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.35);
-      border: 1px solid rgba(255,255,255,.14);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#fff;
-      font-weight: 800;
-      letter-spacing: .18em;
-      backdrop-filter: blur(6px);
-    }
+.paper img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:20px;
+}
 
-    /* ============ 画用紙（旗） ============ */
-    .paper{
-      position:absolute;
-      left: var(--paper-left);
-      top: var(--paper-top);
-      width: var(--paper-width);
-      height: var(--paper-height);
-      border-radius: 26px;
-      background: rgba(250,250,250,.88);
-      box-shadow: 0 22px 60px rgba(0,0,0,.25);
-      z-index: 20;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      backdrop-filter: blur(6px);
-    }
-    .paper .inner{
-      width:100%;
-      height:100%;
-      padding: var(--paper-padding);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .paper .flag{
-      width:100%;
-      height:100%;
-      object-fit: contain;
-      object-position: center;
-      border-radius: 14px;
-      background: #fff;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
-    }
+/* ===== 選択肢 ===== */
+.choicesWrap{
+  position:fixed;
+  left:0; right:0;
+  bottom: var(--choices-bottom);
+  padding:0 16px;
+  z-index:80;
+}
 
-    /* ============ 選択肢（最下部に張り付け） ============ */
-    .choicesWrap{
-      position:fixed;
-      left: 0;
-      right: 0;
-      bottom: var(--choices-bottom);
-      padding: 0 16px;
-      z-index: 80;
-    }
-    .choices{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px 14px;
-      max-width: 760px;
-      margin: 0 auto;
-    }
-    .choice{
-      height: var(--choice-height);
-      border-radius: 26px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.55);
-      color:#fff;
-      font-size: var(--choice-font);
-      font-weight: 900;
-      letter-spacing: .06em;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      box-shadow: 0 18px 40px rgba(0,0,0,.22);
-      cursor:pointer;
-      user-select:none;
-      backdrop-filter: blur(6px);
-    }
-    .choice:active{ transform: translateY(1px); background: rgba(0,0,0,.65); }
+.choices{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  max-width:760px;
+  margin:0 auto;
+}
 
-    /* トースト */
-    .toast{
-      position:fixed;
-      left:50%;
-      transform:translateX(-50%);
-      bottom: calc(var(--choices-bottom) + var(--choice-height) + 12px);
-      background: rgba(0,0,0,.72);
-      color:#fff;
-      padding: 10px 14px;
-      border-radius: 999px;
-      border:1px solid rgba(255,255,255,.14);
-      font-weight:800;
-      letter-spacing:.06em;
-      z-index: 120;
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease;
-      backdrop-filter: blur(8px);
-    }
-    .toast.show{ opacity:1; }
+.choice{
+  height: var(--choice-height);
+  border-radius:26px;
+  border:none;
+  color:#fff;
+  font-size: var(--choice-font);
+  font-weight:900;
+  letter-spacing:.08em;
+  cursor:pointer;
 
-    /* 小さい端末での詰め */
-    @media (max-height: 740px){
-      :root{
-        --paper-height: 28vh;
-        --choice-height: 10vh;
-      }
-    }
-  </style>
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.25),
+    inset 0 -3px 0 rgba(0,0,0,.18);
+
+  transition: transform .06s ease, filter .06s ease;
+}
+
+.choice:active{
+  transform: translateY(2px);
+  filter: brightness(.92);
+}
+
+/* ポップカラー */
+.color-0{ background:#7c4dff; } /* 紫 */
+.color-1{ background:#e53935; } /* 赤 */
+.color-2{ background:#26a69a; } /* 緑 */
+.color-3{ background:#fbc02d; color:#333; } /* 黄 */
+
+</style>
 </head>
 
 <body>
-  <div class="screen" id="screen">
-    <div class="bg" aria-hidden="true"></div>
+<div class="screen">
 
-    <!-- 上メニュー（外） -->
-    <div class="topbar">
-      <button class="iconbtn" id="menuBtn" aria-label="menu">
-        <div class="lines"><span></span><span></span><span></span></div>
-      </button>
-
-      <div class="pill"><span class="small">MODE</span> <b id="modeText">SOLO</b></div>
-      <div class="pill"><span class="small">TIME</span> <b id="timeText">0.0</b><span class="small">s</span></div>
-
-      <div class="spacer"></div>
-
-      <button class="pill" id="retryBtn" style="cursor:pointer">
-        <b style="letter-spacing:.14em">RETRY</b>
-      </button>
-    </div>
-
-    <!-- 吹き出し（透明・最上部） -->
-    <div class="bubble">
-      <p class="q" id="questionText">どこだと思う？</p>
-      <div class="stageBadge" id="stageBadge">STAGE 1</div>
-    </div>
-
-    <!-- 画用紙（旗） -->
-    <div class="paper" id="paper">
-      <div class="inner">
-        <img id="flagImg" class="flag" alt="flag" src="" />
-      </div>
-    </div>
-
-    <!-- 選択肢（最下部） -->
-    <div class="choicesWrap">
-      <div class="choices" id="choices"></div>
-    </div>
-
-    <div class="toast" id="toast">…</div>
+  <div class="topbar">
+    <div class="timer"><span id="time">0.0</span>s</div>
   </div>
 
-  <script>
-    const FLAGS = [
-      { name: "日本", src: "flags/japan.png" },
-      { name: "アメリカ", src: "flags/usa.png" },
-      { name: "フランス", src: "flags/france.png" },
-      { name: "ブラジル", src: "flags/brazil.png" },
-      { name: "オーストラリア", src: "flags/australia.png" },
-      { name: "中国", src: "flags/china.png" },
-      { name: "韓国", src: "flags/korea.png" },
-      { name: "タイ", src: "flags/thailand.png" },
-      { name: "イタリア", src: "flags/italy.png" },
-      { name: "ロシア", src: "flags/russia.png" },
-      { name: "オランダ", src: "flags/netherlands.png" },
-      { name: "アルゼンチン", src: "flags/argentina.png" },
-      { name: "ポルトガル", src: "flags/portugal.png" },
-      { name: "メキシコ", src: "flags/mexico.png" },
-    ];
+  <div class="bg"></div>
 
-    // ★存在する旗だけ使う（未作成が混ざっても壊れない）
-    let AVAILABLE_FLAGS = [];
+  <div class="bubble">
+    <p>どこだと思う？</p>
+  </div>
 
-    const STAGES_TOTAL = 25;
-    let stage = 1;
-    let currentAnswer = null;
-    let timerId = null;
-    let startTime = null;
-    let running = false;
+  <div class="paper">
+    <img id="flag" src="flags/usa.png" alt="flag">
+  </div>
 
-    const elTime = document.getElementById("timeText");
-    const elStage = document.getElementById("stageBadge");
-    const elFlag = document.getElementById("flagImg");
-    const elChoices = document.getElementById("choices");
-    const elRetry = document.getElementById("retryBtn");
-    const elMenu = document.getElementById("menuBtn");
-    const elToast = document.getElementById("toast");
+  <div class="choicesWrap">
+    <div class="choices" id="choices"></div>
+  </div>
 
-    function randInt(n){ return Math.floor(Math.random()*n); }
-    function shuffle(arr){
-      const a = arr.slice();
-      for(let i=a.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [a[i],a[j]]=[a[j],a[i]];
-      }
-      return a;
-    }
+</div>
 
-    function toast(msg){
-      elToast.textContent = msg;
-      elToast.classList.add("show");
-      clearTimeout(toast._t);
-      toast._t = setTimeout(()=> elToast.classList.remove("show"), 650);
-    }
+<script>
+const FLAGS = [
+  {name:"日本",src:"flags/japan.png"},
+  {name:"アメリカ",src:"flags/usa.png"},
+  {name:"フランス",src:"flags/france.png"},
+  {name:"ブラジル",src:"flags/brazil.png"},
+  {name:"オーストラリア",src:"flags/australia.png"},
+  {name:"中国",src:"flags/china.png"},
+  {name:"韓国",src:"flags/korea.png"},
+  {name:"イタリア",src:"flags/italy.png"}
+];
 
-    // ★プリロードして、読めた画像だけを AVAILABLE_FLAGS に入れる
-    function preloadFlags(){
-      return Promise.all(FLAGS.map(f => new Promise(resolve=>{
-        const img = new Image();
-        img.onload = ()=> resolve(f);
-        img.onerror = ()=> resolve(null);
-        img.src = f.src;
-      }))).then(list=>{
-        AVAILABLE_FLAGS = list.filter(Boolean);
-      });
-    }
+let start = performance.now();
+setInterval(()=>{
+  document.getElementById("time").textContent =
+    ((performance.now()-start)/1000).toFixed(1);
+},100);
 
-    function pick4(){
-      const base = shuffle(AVAILABLE_FLAGS);
-      const chosen = base.slice(0,4);
-      const answer = chosen[randInt(4)];
-      return { chosen, answer };
-    }
+function shuffle(a){
+  return a.sort(()=>Math.random()-0.5);
+}
 
-    function setStageUI(){ elStage.textContent = `STAGE ${stage}`; }
+function render(){
+  const pick = shuffle([...FLAGS]).slice(0,4);
+  const answer = pick[Math.floor(Math.random()*4)];
+  document.getElementById("flag").src = answer.src;
 
-    function renderQuestion(){
-      if(AVAILABLE_FLAGS.length < 4){
-        // 4枚未満だとゲームできない
-        elChoices.innerHTML = "";
-        elFlag.removeAttribute("src");
-        toast("旗が足りない");
-        return;
-      }
+  const wrap = document.getElementById("choices");
+  wrap.innerHTML="";
+  shuffle(pick).forEach((c,i)=>{
+    const b=document.createElement("button");
+    b.className=`choice color-${i}`;
+    b.textContent=c.name;
+    wrap.appendChild(b);
+  });
+}
 
-      const { chosen, answer } = pick4();
-      currentAnswer = answer;
-      elFlag.src = answer.src;
-
-      elChoices.innerHTML = "";
-      chosen.forEach(item=>{
-        const btn = document.createElement("button");
-        btn.className = "choice";
-        btn.textContent = item.name;
-        btn.addEventListener("click", ()=> onChoice(item));
-        elChoices.appendChild(btn);
-      });
-
-      setStageUI();
-    }
-
-    function startTimer(){
-      if(timerId) clearInterval(timerId);
-      startTime = performance.now();
-      running = true;
-      timerId = setInterval(()=>{
-        const t = (performance.now()-startTime)/1000;
-        elTime.textContent = t.toFixed(1);
-      }, 100);
-    }
-    function stopTimer(){
-      running = false;
-      if(timerId) clearInterval(timerId);
-      timerId = null;
-    }
-
-    function resetGame(){
-      stopTimer();
-      stage = 1;
-      elTime.textContent = "0.0";
-      renderQuestion();
-      startTimer();
-    }
-
-    function nextStage(){
-      stage++;
-      if(stage > STAGES_TOTAL){
-        stopTimer();
-        toast("CLEAR");
-        return;
-      }
-      renderQuestion();
-    }
-
-    function onChoice(item){
-      if(!running) return;
-      if(item.name === currentAnswer.name){
-        toast("ギュウ");
-      }else{
-        toast("…");
-      }
-      nextStage();
-    }
-
-    elRetry.addEventListener("click", resetGame);
-    elMenu.addEventListener("click", ()=> toast("TUNEは後で"));
-
-    // 起動
-    preloadFlags().then(()=>{
-      // デバッグしたいならここで AVAILABLE_FLAGS を console.log してOK
-      renderQuestion();
-      startTimer();
-    });
-
-    document.addEventListener("touchmove", (e)=>{ e.preventDefault(); }, { passive:false });
-  </script>
+render();
+</script>
 </body>
 </html>
