@@ -7,93 +7,59 @@
 
   <style>
     :root{
-      /* ========= 調整しやすい変数 ========= */
       --bg-image: url("chi_base.png");
 
-      /* 上メニュー高さ（これが“外”の基準） */
-      --topbar-h: calc(52px + env(safe-area-inset-top));
+      /* topbar（外） */
+      --topbar-h: 56px;
 
       /* 旗(画用紙) */
       --paper-left: 6vw;
-      --paper-top: calc(var(--topbar-h) + 92px); /* ← topbarの外に出すため下げる */
+      --paper-top: 90px;         /* ← ここは “ゲームエリア内” の座標になる */
       --paper-width: 88vw;
       --paper-height: 30vh;
       --paper-padding: 3.2vmin;
 
-      /* 吹き出し（最上部・透明） */
-      --bubble-top: calc(var(--topbar-h) + 10px); /* ← topbarの“下”に */
+      /* 吹き出し（ゲームエリア最上） */
+      --bubble-top: 18px;        /* ← ここも “ゲームエリア内” */
       --bubble-left: 4vw;
       --bubble-width: 92vw;
 
       /* 選択肢（最下部） */
       --choices-bottom: calc(env(safe-area-inset-bottom) + 14px);
-      --choice-height: clamp(54px, 7.8vh, 72px); /* ← 高さを狭く */
+      --choice-height: clamp(54px, 7.8vh, 72px);
       --choice-font: clamp(18px, 4.2vw, 26px);
-      /* =================================== */
     }
 
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#000; }
     button{ font-family:inherit; }
-    .screen{ position:relative; width:100%; height:100svh; overflow:hidden; background:#000; }
 
-    /* 背景（女の子） */
-    .bg{
-      position:absolute; inset:0;
-      background-image: var(--bg-image);
-      background-size: cover;
-      background-position: center;
-      z-index: 1;
-    }
-
-    /* ====== うっすら暗幕（ポップでも読みやすくする） ====== */
-    .screen::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: rgba(0,0,0,.10); /* 0.08〜0.18で好み */
-      z-index: 2;
-      pointer-events:none;
-    }
-
-    /* ============ 上メニュー（完全に外） ============ */
+    /* ====== 外：黒いトップバー ====== */
     .topbar{
       position:fixed;
       left:0; right:0; top:0;
-      height: var(--topbar-h);
+      height: calc(var(--topbar-h) + env(safe-area-inset-top));
       padding-top: env(safe-area-inset-top);
       padding-left: 12px;
       padding-right: 12px;
-
       display:flex;
       align-items:center;
       gap:10px;
+      z-index: 300;
 
-      z-index: 200;
-      /* “外”感：最小限（下に薄い影だけ） */
-      background: transparent;
-      pointer-events:none;
+      background: #000;                 /* ← 黒 */
+      border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .topbar::after{
-      content:"";
-      position:absolute;
-      left:0; right:0; bottom:-8px;
-      height: 18px;
-      background: linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,0));
-      pointer-events:none;
-    }
-    .topbar .pill, .topbar .iconbtn{ pointer-events:auto; }
 
     .iconbtn{
       width:40px; height:40px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(0,0,0,.34);
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
       display:grid;
       place-items:center;
       color:#fff;
       cursor:pointer;
-      backdrop-filter: blur(6px);
     }
     .iconbtn .lines{ width:18px; height:12px; position:relative; }
     .iconbtn .lines span{
@@ -107,8 +73,8 @@
     .pill{
       height:40px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(0,0,0,.34);
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
       color:#fff;
       display:flex;
       align-items:center;
@@ -118,33 +84,54 @@
       text-transform: uppercase;
       font-size:12px;
       white-space:nowrap;
-      backdrop-filter: blur(6px);
     }
     .pill b{
       letter-spacing:.06em;
       font-size:18px;
       font-weight:900;
     }
-    .pill .small{
-      letter-spacing:.12em;
-      opacity:.85;
-      font-size:12px;
-    }
+    .pill .small{ opacity:.85; font-size:12px; }
     .spacer{ flex:1; }
 
-    /* ============ 吹き出し（最上・透明） ============ */
+    /* ====== 内：ゲームエリア（topbarの下から開始） ====== */
+    .game{
+      position:relative;
+      width:100%;
+      height:100svh;
+      padding-top: calc(var(--topbar-h) + env(safe-area-inset-top));  /* ← ここが本命 */
+      overflow:hidden;
+      background:#000;
+    }
+
+    /* 背景（女の子）はゲームエリア内に敷く */
+    .bg{
+      position:absolute;
+      left:0; right:0;
+      top:0; bottom:0;
+      background-image: var(--bg-image);
+      background-size: cover;
+      background-position: center;
+      z-index: 1;
+    }
+
+    /* うっすら暗幕（読めるように） */
+    .game::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.10);
+      z-index: 2;
+      pointer-events:none;
+    }
+
+    /* 吹き出し（透明・ゲームエリアの上） */
     .bubble{
-      position:fixed;
+      position:absolute;
       left: var(--bubble-left);
       top: var(--bubble-top);
       width: var(--bubble-width);
       max-width: 760px;
-      z-index: 150;
-
-      background: transparent;
-      box-shadow: none;
-      border-radius: 0;
-      padding: 6px 8px 6px 8px;
+      z-index: 50;
       pointer-events:none;
     }
     .bubble .q{
@@ -153,9 +140,7 @@
       font-weight: 900;
       letter-spacing: .02em;
       color: rgba(255,255,255,.95);
-      text-shadow:
-        0 2px 10px rgba(0,0,0,.55),
-        0 1px 0 rgba(0,0,0,.35);
+      text-shadow: 0 3px 12px rgba(0,0,0,.55);
     }
     .stageBadge{
       position:absolute;
@@ -165,33 +150,31 @@
       min-width: 118px;
       padding: 0 16px;
       border-radius: 999px;
-      background: rgba(0,0,0,.30);
-      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.32);
+      border: 1px solid rgba(255,255,255,.14);
       display:flex;
       align-items:center;
       justify-content:center;
       color:#fff;
       font-weight: 900;
       letter-spacing: .18em;
-      backdrop-filter: blur(6px);
     }
 
-    /* ============ 画用紙（旗） ============ */
+    /* 画用紙（旗） */
     .paper{
       position:absolute;
       left: var(--paper-left);
-      top: var(--paper-top);
+      top: var(--paper-top);         /* ← 足し算しない */
       width: var(--paper-width);
       height: var(--paper-height);
       border-radius: 26px;
       background: rgba(250,250,250,.92);
       box-shadow: 0 22px 60px rgba(0,0,0,.25);
-      z-index: 60;
+      z-index: 40;
       display:flex;
       align-items:center;
       justify-content:center;
       overflow:hidden;
-      backdrop-filter: blur(6px);
     }
     .paper .inner{
       width:100%;
@@ -205,63 +188,53 @@
       width:100%;
       height:100%;
       object-fit: contain;
-      object-position: center;
       border-radius: 14px;
       background: #fff;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
     }
 
-    /* ============ 選択肢（最下部） ============ */
+    /* 選択肢（最下部） */
     .choicesWrap{
-      position:fixed;
-      left: 0;
-      right: 0;
+      position:absolute;
+      left:0; right:0;
       bottom: var(--choices-bottom);
       padding: 0 16px;
-      z-index: 160;
+      z-index: 80;
     }
     .choices{
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px 12px; /* 少し詰める */
+      gap: 12px 12px;
       max-width: 760px;
       margin: 0 auto;
     }
 
-    /* ====== チーギュウ風：ポップ4色ボタン ====== */
+    /* ポップ4色 */
     .choice{
       height: var(--choice-height);
-      border-radius: 18px;                 /* 角丸ちょい小さく */
-      border: none;
+      border-radius: 18px;
+      border:none;
       color:#fff;
       font-size: var(--choice-font);
       font-weight: 900;
       letter-spacing: .04em;
-
       display:flex;
       align-items:center;
       justify-content:center;
-
       box-shadow: 0 14px 30px rgba(0,0,0,.22);
       cursor:pointer;
       user-select:none;
-
       text-shadow: 0 2px 10px rgba(0,0,0,.22);
     }
-    /* 位置で色固定（見た目が安定してポップ） */
-    .choices .choice:nth-child(1){ background:#7a3ff2; } /* 紫 */
-    .choices .choice:nth-child(2){ background:#e03b3b; } /* 赤 */
-    .choices .choice:nth-child(3){ background:#7a8791; } /* グレー */
-    .choices .choice:nth-child(4){ background:#f5a623; } /* オレンジ */
-
-    .choice:active{
-      transform: translateY(2px);
-      filter: brightness(.96);
-    }
+    .choices .choice:nth-child(1){ background:#7a3ff2; }
+    .choices .choice:nth-child(2){ background:#e03b3b; }
+    .choices .choice:nth-child(3){ background:#7a8791; }
+    .choices .choice:nth-child(4){ background:#f5a623; }
+    .choice:active{ transform: translateY(2px); filter: brightness(.96); }
 
     /* トースト */
     .toast{
-      position:fixed;
+      position:absolute;
       left:50%;
       transform:translateX(-50%);
       bottom: calc(var(--choices-bottom) + var(--choice-height) + 12px);
@@ -269,18 +242,16 @@
       color:#fff;
       padding: 10px 14px;
       border-radius: 999px;
-      border:1px solid rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.14);
       font-weight:900;
       letter-spacing:.06em;
-      z-index: 220;
+      z-index: 120;
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
-      backdrop-filter: blur(8px);
     }
     .toast.show{ opacity:1; }
 
-    /* 小さい端末での詰め */
     @media (max-height: 740px){
       :root{
         --paper-height: 28vh;
@@ -291,39 +262,37 @@
 </head>
 
 <body>
-  <div class="screen" id="screen">
+  <!-- 外：トップバー（背景に乗らない） -->
+  <div class="topbar">
+    <button class="iconbtn" id="menuBtn" aria-label="menu">
+      <div class="lines"><span></span><span></span><span></span></div>
+    </button>
+
+    <div class="pill"><span class="small">MODE</span> <b id="modeText">SOLO</b></div>
+    <div class="pill"><span class="small">TIME</span> <b id="timeText">0.0</b><span class="small">s</span></div>
+
+    <div class="spacer"></div>
+
+    <button class="pill" id="retryBtn" style="cursor:pointer">
+      <b style="letter-spacing:.14em">RETRY</b>
+    </button>
+  </div>
+
+  <!-- 内：ゲーム（topbarの下からスタート） -->
+  <div class="game" id="game">
     <div class="bg" aria-hidden="true"></div>
 
-    <!-- 上メニュー（外） -->
-    <div class="topbar">
-      <button class="iconbtn" id="menuBtn" aria-label="menu">
-        <div class="lines"><span></span><span></span><span></span></div>
-      </button>
-
-      <div class="pill"><span class="small">MODE</span> <b id="modeText">SOLO</b></div>
-      <div class="pill"><span class="small">TIME</span> <b id="timeText">0.0</b><span class="small">s</span></div>
-
-      <div class="spacer"></div>
-
-      <button class="pill" id="retryBtn" style="cursor:pointer">
-        <b style="letter-spacing:.14em">RETRY</b>
-      </button>
-    </div>
-
-    <!-- 吹き出し（透明・最上部 / topbarの下） -->
     <div class="bubble">
       <p class="q" id="questionText">どこだと思う？</p>
       <div class="stageBadge" id="stageBadge">STAGE 1</div>
     </div>
 
-    <!-- 画用紙（旗） -->
     <div class="paper" id="paper">
       <div class="inner">
         <img id="flagImg" class="flag" alt="flag" src="" />
       </div>
     </div>
 
-    <!-- 選択肢（最下部） -->
     <div class="choicesWrap">
       <div class="choices" id="choices"></div>
     </div>
@@ -438,11 +407,7 @@
 
     function onChoice(item){
       if(!running) return;
-      if(item.name === currentAnswer.name){
-        toast("ギュウ");
-      }else{
-        toast("…");
-      }
+      toast(item.name === currentAnswer.name ? "ギュウ" : "…");
       nextStage();
     }
 
@@ -452,7 +417,6 @@
     renderQuestion();
     startTimer();
 
-    // 画面スクロール抑止（iOS対策）
     document.addEventListener("touchmove", (e)=>{ e.preventDefault(); }, { passive:false });
   </script>
 </body>
