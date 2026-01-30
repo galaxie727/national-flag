@@ -12,7 +12,7 @@
 
       /* 旗(画用紙) */
       --paper-left: 6vw;
-      --paper-top: calc(56px + env(safe-area-inset-top) + 8px); /* 上メニューの下に逃がす */
+      --paper-top: 8px;
       --paper-width: 88vw;
       --paper-height: 30vh;
       --paper-padding: 3.2vmin;
@@ -34,30 +34,30 @@
     button{ font-family:inherit; }
     .screen{ position:relative; width:100%; height:100svh; overflow:hidden; background:#000; }
 
-    /* 背景（女の子） */
     .bg{
-      position:absolute; inset:0;
-      background-image: var(--bg-image);
-      background-size: cover;
-      background-position: center;
-      z-index: 1;
-    }
+  position:absolute;
+  top: calc(56px + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-    /* ============ 上メニュー（外） ============ */
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+}
+
     .topbar{
-      position:fixed;
-      left:0; right:0; top:0;
-      padding-top: env(safe-area-inset-top);
-      padding-left: 12px;
-      padding-right: 12px;
-      height: calc(56px + env(safe-area-inset-top));
-      display:flex;
-      align-items:center;
-      gap:10px;
-      z-index: 100;
-      background: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
-      pointer-events:none;
-    }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: calc(56px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+
+  background: #000; /* ←完全に黒 */
+  z-index: 1000;
+}
     .topbar .pill, .topbar .iconbtn{ pointer-events:auto; }
 
     .iconbtn{
