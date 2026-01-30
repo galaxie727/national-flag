@@ -5,118 +5,124 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>国旗どこだと思う？</title>
 
-  <!-- できる範囲でキャッシュ抑制（効かない環境もある） -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
   <style>
     :root{
-      /* ===== 調整ポイント ===== */
-      --bg-image: url("chi_base.png"); /* 女の子背景 */
-      --topbar-h: 74px;               /* 黒バーの高さ（見た目） */
-      --q-font: clamp(28px, 6.6vw, 46px);
+      /* ====== ここだけ触ればOK ====== */
+      --bg-image: url("chi_base.png");
 
-      /* 旗（画用紙） */
-      --paper-w: 92vw;
-      --paper-h: 32vh;
-      --paper-radius: 26px;
+      /* 上の黒バー（“中身の高さ”） */
+      --bar-h: 64px;
+
+      /* 旗カード */
+      --paper-left: 6vw;
+      --paper-width: 88vw;
+      --paper-height: 30vh;
+
+      /* セリフ */
+      --q-left: 4vw;
+      --q-width: 92vw;
 
       /* 選択肢 */
-      --choice-h: 11vh;               /* 高さ（もう少し細くしたいならここ） */
-      --choice-radius: 26px;
-      --choice-font: clamp(18px, 4.8vw, 28px);
-      --gap: 14px;
-      /* ======================== */
+      --choices-bottom: calc(env(safe-area-inset-bottom) + 14px);
+      --choice-height: 10.5vh;
+      --choice-font: clamp(18px, 4.2vw, 26px);
+      /* ============================== */
     }
 
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    html,body{
-      height:100%;
-      margin:0;
-      font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
-      background:#000;
-      overflow:hidden;
-    }
-    button{ font-family:inherit; border:0; background:none; }
+    html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; background:#000; }
+    button{ font-family:inherit; border:0; }
 
-    /* ===== トップバー（黒固定・タイマーだけ） ===== */
+    /* iPhoneのノッチ分 */
+    :root{ --safe-top: env(safe-area-inset-top); }
+    :root{ --bar-total: calc(var(--bar-h) + var(--safe-top)); }
+
+    /* 画面土台 */
+    .screen{
+      position:fixed;
+      inset:0;
+      overflow:hidden;
+      background:#000;
+    }
+
+    /* ===== 上の黒バー（固定） ===== */
     .topbar{
       position:fixed;
       left:0; right:0; top:0;
-      height: calc(var(--topbar-h) + env(safe-area-inset-top));
-      padding-top: env(safe-area-inset-top);
-      background:#000;
+      height: var(--bar-total);
+      padding-top: var(--safe-top);
       display:flex;
       align-items:center;
       justify-content:center;
-      z-index:1000;
+      background:#000;
+      z-index: 200;
     }
     .time{
       color:#fff;
       font-weight:900;
-      font-size: clamp(30px, 8vw, 44px);
-      letter-spacing:.06em;
+      letter-spacing:.04em;
+      font-size: clamp(28px, 8vw, 44px);
+      line-height: 1;
+      user-select:none;
     }
 
-    /* ===== ここが重要：ゲーム領域は “トップバーの下” から始める ===== */
+    /* ===== “ゲーム領域”は黒バーの下から開始 ===== */
     .game{
-      position:fixed;
+      position:absolute;
       left:0; right:0;
-      top: calc(var(--topbar-h) + env(safe-area-inset-top));
+      top: var(--bar-total);
       bottom:0;
       overflow:hidden;
-      background:#000;
     }
 
-    /* 背景（女の子） ※game領域の中だけに描画される */
+    /* 背景（女の子） */
     .bg{
-      position:absolute; inset:0;
+      position:absolute;
+      inset:0;
       background-image: var(--bg-image);
       background-size: cover;
       background-position: center;
-      z-index:1;
+      z-index: 1;
     }
 
-    /* 吹き出し（透明・文字だけ） */
+    /* セリフ（透明バブル＝文字だけ） */
     .bubble{
       position:absolute;
-      left: 4vw;
+      left: var(--q-left);
       top: 10px;
-      width: 92vw;
-      z-index:20;
+      width: var(--q-width);
+      max-width: 760px;
+      z-index: 50;
       pointer-events:none;
     }
     .bubble .q{
       margin:0;
-      font-size: var(--q-font);
+      font-size: clamp(28px, 6.8vw, 46px);
       font-weight: 900;
       color: rgba(255,255,255,.95);
       text-shadow:
-        0 3px 12px rgba(0,0,0,.55),
+        0 2px 10px rgba(0,0,0,.55),
         0 1px 0 rgba(0,0,0,.35);
-      letter-spacing:.02em;
     }
 
-    /* 旗（画用紙） */
+    /* 旗カード（画用紙） */
     .paper{
       position:absolute;
-      left:50%;
-      transform:translateX(-50%);
-      top: clamp(64px, 10vh, 110px); /* ← 旗の“基準位置”。下がっていかない */
-      width: var(--paper-w);
-      height: var(--paper-h);
-      border-radius: var(--paper-radius);
-      background: rgba(255,255,255,.72);
-      box-shadow: 0 22px 60px rgba(0,0,0,.22);
-      z-index:10;
+      left: var(--paper-left);
+      top: 72px;                 /* ← “game内”の固定位置。ここで見た目を決める */
+      width: var(--paper-width);
+      height: var(--paper-height);
+      border-radius: 26px;
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 22px 60px rgba(0,0,0,.25);
+      z-index: 40;
       display:flex;
       align-items:center;
       justify-content:center;
       overflow:hidden;
       backdrop-filter: blur(6px);
     }
-    .paperInner{
+    .paper .inner{
       width:100%;
       height:100%;
       padding: 3.2vmin;
@@ -124,69 +130,69 @@
       align-items:center;
       justify-content:center;
     }
-    .flag{
+    .paper img{
       width:100%;
       height:100%;
-      object-fit:contain;
-      background:#fff;
+      object-fit: contain;
       border-radius: 14px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.10);
+      background:#fff;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+      /* 画像が無い時に alt の “flag” が出るのを避ける */
+      color: transparent;
     }
 
-    /* 選択肢（最下部固定：game領域基準） */
+    /* 選択肢 */
     .choicesWrap{
       position:absolute;
       left:0; right:0;
-      bottom: calc(env(safe-area-inset-bottom) + 14px);
+      bottom: var(--choices-bottom);
       padding: 0 16px;
-      z-index:30;
+      z-index: 60;
     }
     .choices{
-      max-width: 760px;
-      margin: 0 auto;
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap: var(--gap);
+      gap: 14px;
+      max-width: 760px;
+      margin: 0 auto;
     }
-
     .choice{
-      height: var(--choice-h);
-      border-radius: var(--choice-radius);
+      height: var(--choice-height);
+      border-radius: 26px;
+      color:#fff;
+      font-size: var(--choice-font);
+      font-weight: 900;
+      letter-spacing: .06em;
       display:flex;
       align-items:center;
       justify-content:center;
-      font-size: var(--choice-font);
-      font-weight: 900;
-      letter-spacing:.06em;
-      color:#fff;
-      box-shadow: 0 18px 40px rgba(0,0,0,.18);
+      box-shadow: 0 18px 40px rgba(0,0,0,.22);
       cursor:pointer;
       user-select:none;
-      transform: translateY(0);
-      transition: transform .06s ease, filter .12s ease;
+      transition: transform .06s ease;
     }
-    .choice:active{ transform: translateY(1px); filter: brightness(0.95); }
+    .choice:active{ transform: translateY(1px); }
 
-    /* ポップな4色（チーと言えばギュウ風） */
-    .c1{ background:#6E5BFF; } /* 紫 */
-    .c2{ background:#E53935; } /* 赤 */
-    .c3{ background:#26A69A; } /* 緑 */
-    .c4{ background:#FBC02D; color:#1a1a1a; } /* 黄（文字黒） */
+    /* ポップ配色（固定4色） */
+    .c0{ background:#6A5CFF; }
+    .c1{ background:#E53935; }
+    .c2{ background:#26A69A; }
+    .c3{ background:#F6C343; color:#222; }
 
     /* トースト */
     .toast{
       position:absolute;
       left:50%;
       transform:translateX(-50%);
-      bottom: calc(env(safe-area-inset-bottom) + 14px + var(--choice-h) + 14px);
+      bottom: calc(var(--choices-bottom) + var(--choice-height) + 12px);
       background: rgba(0,0,0,.72);
       color:#fff;
       padding: 10px 14px;
       border-radius: 999px;
       border:1px solid rgba(255,255,255,.14);
-      font-weight:900;
+      font-weight:800;
       letter-spacing:.06em;
-      z-index:40;
+      z-index: 120;
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
@@ -194,57 +200,46 @@
     }
     .toast.show{ opacity:1; }
 
-    /* 小さい端末で調整 */
     @media (max-height: 740px){
       :root{
-        --paper-h: 30vh;
-        --choice-h: 10vh;
+        --paper-height: 28vh;
+        --choice-height: 10vh;
       }
+      .paper{ top: 64px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="topbar">
-    <div class="time" id="timeText">0.0s</div>
-  </div>
-
-  <div class="game" id="game">
-    <div class="bg" aria-hidden="true"></div>
-
-    <div class="bubble">
-      <p class="q" id="questionText">どこだと思う？</p>
+  <div class="screen">
+    <!-- 黒トップバー（ここは“ゲーム外”として固定） -->
+    <div class="topbar">
+      <div class="time" id="timeText">0.0s</div>
     </div>
 
-    <div class="paper" id="paper">
-      <div class="paperInner">
-        <img id="flagImg" class="flag" alt="flag" src="" />
+    <!-- ゲーム領域（黒バーの下から開始） -->
+    <div class="game" id="game">
+      <div class="bg" aria-hidden="true"></div>
+
+      <div class="bubble">
+        <p class="q" id="questionText">どこだと思う？</p>
       </div>
-    </div>
 
-    <div class="choicesWrap">
-      <div class="choices" id="choices"></div>
-    </div>
+      <div class="paper" id="paper">
+        <div class="inner">
+          <img id="flagImg" alt="" src="" />
+        </div>
+      </div>
 
-    <div class="toast" id="toast">…</div>
+      <div class="choicesWrap">
+        <div class="choices" id="choices"></div>
+      </div>
+
+      <div class="toast" id="toast">…</div>
+    </div>
   </div>
 
   <script>
-    // ===== iOSで「?v=」が効かない時の最終兵器：SW/Cacheを強制解除 =====
-    (async ()=>{
-      try{
-        if('serviceWorker' in navigator){
-          const regs = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(regs.map(r => r.unregister()));
-        }
-        if(window.caches){
-          const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
-        }
-      }catch(e){}
-    })();
-    // =================================================================
-
     const FLAGS = [
       { name: "日本", src: "flags/japan.png" },
       { name: "アメリカ", src: "flags/usa.png" },
@@ -252,13 +247,13 @@
       { name: "ブラジル", src: "flags/brazil.png" },
       { name: "オーストラリア", src: "flags/australia.png" },
       { name: "中国", src: "flags/china.png" },
-      { name: "韓国", src: "flags/korea.png" },
-      { name: "タイ", src: "flags/thailand.png" },
-      { name: "イタリア", src: "flags/italy.png" },
       { name: "ロシア", src: "flags/russia.png" },
+      { name: "ポルトガル", src: "flags/portugal.png" },
+      { name: "イタリア", src: "flags/italy.png" },
+      { name: "タイ", src: "flags/thailand.png" },
+      { name: "韓国", src: "flags/korea.png" },
       { name: "オランダ", src: "flags/netherlands.png" },
       { name: "アルゼンチン", src: "flags/argentina.png" },
-      { name: "ポルトガル", src: "flags/portugal.png" },
       { name: "メキシコ", src: "flags/mexico.png" },
     ];
 
@@ -283,6 +278,7 @@
       }
       return a;
     }
+
     function pick4(){
       const base = shuffle(FLAGS);
       const chosen = base.slice(0,4);
@@ -290,29 +286,30 @@
       return { chosen, answer };
     }
 
+    function renderQuestion(){
+      const { chosen, answer } = pick4();
+      currentAnswer = answer;
+
+      // 画像が無いときに “flag” が出ないように、失敗時は非表示
+      elFlag.style.visibility = "visible";
+      elFlag.onerror = () => { elFlag.style.visibility = "hidden"; };
+      elFlag.src = answer.src;
+
+      elChoices.innerHTML = "";
+      chosen.forEach((item, idx)=>{
+        const btn = document.createElement("button");
+        btn.className = `choice c${idx}`;
+        btn.textContent = item.name;
+        btn.addEventListener("click", ()=> onChoice(item));
+        elChoices.appendChild(btn);
+      });
+    }
+
     function toast(msg){
       elToast.textContent = msg;
       elToast.classList.add("show");
       clearTimeout(toast._t);
       toast._t = setTimeout(()=> elToast.classList.remove("show"), 650);
-    }
-
-    function renderQuestion(){
-      const { chosen, answer } = pick4();
-      currentAnswer = answer;
-
-      // 画像キャッシュも避ける（更新が伝わりやすい）
-      elFlag.src = answer.src + "?v=" + Date.now();
-
-      elChoices.innerHTML = "";
-      const colorClasses = ["c1","c2","c3","c4"];
-      chosen.forEach((item, idx)=>{
-        const btn = document.createElement("button");
-        btn.className = "choice " + colorClasses[idx];
-        btn.textContent = item.name;
-        btn.addEventListener("click", ()=> onChoice(item));
-        elChoices.appendChild(btn);
-      });
     }
 
     function startTimer(){
@@ -350,14 +347,18 @@
 
     function onChoice(item){
       if(!running) return;
-      toast(item.name === currentAnswer.name ? "ギュウ" : "…");
+      if(item.name === currentAnswer.name){
+        toast("ギュウ");
+      }else{
+        toast("…");
+      }
       nextStage();
     }
 
     renderQuestion();
     startTimer();
 
-    // 画面スクロール抑止（ゲーム用）
+    // iOSのスクロール暴発防止
     document.addEventListener("touchmove", (e)=>{ e.preventDefault(); }, { passive:false });
   </script>
 </body>
