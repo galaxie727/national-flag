@@ -10,21 +10,24 @@
       /* ========= 調整しやすい変数 ========= */
       --bg-image: url("chi_base.png");
 
+      /* 上メニュー高さ（これが“外”の基準） */
+      --topbar-h: calc(52px + env(safe-area-inset-top));
+
       /* 旗(画用紙) */
       --paper-left: 6vw;
-      --paper-top: calc(56px + env(safe-area-inset-top) + 8px); /* 上メニューの下に逃がす */
+      --paper-top: calc(var(--topbar-h) + 92px); /* ← topbarの外に出すため下げる */
       --paper-width: 88vw;
       --paper-height: 30vh;
       --paper-padding: 3.2vmin;
 
       /* 吹き出し（最上部・透明） */
-      --bubble-top: calc(env(safe-area-inset-top) + 8px);
+      --bubble-top: calc(var(--topbar-h) + 10px); /* ← topbarの“下”に */
       --bubble-left: 4vw;
       --bubble-width: 92vw;
 
       /* 選択肢（最下部） */
       --choices-bottom: calc(env(safe-area-inset-bottom) + 14px);
-      --choice-height: 10.5vh;
+      --choice-height: clamp(54px, 7.8vh, 72px); /* ← 高さを狭く */
       --choice-font: clamp(18px, 4.2vw, 26px);
       /* =================================== */
     }
@@ -43,48 +46,69 @@
       z-index: 1;
     }
 
-    /* ============ 上メニュー（外） ============ */
+    /* ====== うっすら暗幕（ポップでも読みやすくする） ====== */
+    .screen::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: rgba(0,0,0,.10); /* 0.08〜0.18で好み */
+      z-index: 2;
+      pointer-events:none;
+    }
+
+    /* ============ 上メニュー（完全に外） ============ */
     .topbar{
       position:fixed;
       left:0; right:0; top:0;
+      height: var(--topbar-h);
       padding-top: env(safe-area-inset-top);
       padding-left: 12px;
       padding-right: 12px;
-      height: calc(56px + env(safe-area-inset-top));
+
       display:flex;
       align-items:center;
       gap:10px;
-      z-index: 100;
-      /* “外”感：背景はほぼ無し、文字だけ浮く感じ */
-      background: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
+
+      z-index: 200;
+      /* “外”感：最小限（下に薄い影だけ） */
+      background: transparent;
+      pointer-events:none;
+    }
+    .topbar::after{
+      content:"";
+      position:absolute;
+      left:0; right:0; bottom:-8px;
+      height: 18px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.20), rgba(0,0,0,0));
       pointer-events:none;
     }
     .topbar .pill, .topbar .iconbtn{ pointer-events:auto; }
 
     .iconbtn{
-      width:42px; height:42px;
+      width:40px; height:40px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.34);
       display:grid;
       place-items:center;
       color:#fff;
       cursor:pointer;
+      backdrop-filter: blur(6px);
     }
     .iconbtn .lines{ width:18px; height:12px; position:relative; }
     .iconbtn .lines span{
       position:absolute; left:0; right:0; height:2px;
-      background:#fff; border-radius:2px; opacity:.9;
+      background:#fff; border-radius:2px; opacity:.92;
     }
     .iconbtn .lines span:nth-child(1){ top:0; }
     .iconbtn .lines span:nth-child(2){ top:5px; width:14px; }
     .iconbtn .lines span:nth-child(3){ bottom:0; width:18px; }
 
     .pill{
-      height:42px;
+      height:40px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.34);
       color:#fff;
       display:flex;
       align-items:center;
@@ -99,7 +123,7 @@
     .pill b{
       letter-spacing:.06em;
       font-size:18px;
-      font-weight:800;
+      font-weight:900;
     }
     .pill .small{
       letter-spacing:.12em;
@@ -115,41 +139,39 @@
       top: var(--bubble-top);
       width: var(--bubble-width);
       max-width: 760px;
-      z-index: 90;
+      z-index: 150;
 
-      /* 透明にする（文字だけ） */
       background: transparent;
       box-shadow: none;
       border-radius: 0;
-      padding: 10px 8px 6px 8px;
-      pointer-events:none; /* 触れない */
+      padding: 6px 8px 6px 8px;
+      pointer-events:none;
     }
     .bubble .q{
       margin:0;
       font-size: clamp(26px, 6.2vw, 44px);
       font-weight: 900;
       letter-spacing: .02em;
-      color: rgba(255,255,255,.92);
-      /* 黒背景でも女の子背景でも読める縁取り */
+      color: rgba(255,255,255,.95);
       text-shadow:
-        0 2px 8px rgba(0,0,0,.55),
+        0 2px 10px rgba(0,0,0,.55),
         0 1px 0 rgba(0,0,0,.35);
     }
     .stageBadge{
       position:absolute;
       right: 0;
       top: 0;
-      height: 38px;
+      height: 36px;
       min-width: 118px;
       padding: 0 16px;
       border-radius: 999px;
-      background: rgba(0,0,0,.35);
-      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.30);
+      border: 1px solid rgba(255,255,255,.16);
       display:flex;
       align-items:center;
       justify-content:center;
       color:#fff;
-      font-weight: 800;
+      font-weight: 900;
       letter-spacing: .18em;
       backdrop-filter: blur(6px);
     }
@@ -162,9 +184,9 @@
       width: var(--paper-width);
       height: var(--paper-height);
       border-radius: 26px;
-      background: rgba(250,250,250,.88);
+      background: rgba(250,250,250,.92);
       box-shadow: 0 22px 60px rgba(0,0,0,.25);
-      z-index: 20;
+      z-index: 60;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -189,40 +211,53 @@
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
     }
 
-    /* ============ 選択肢（最下部に張り付け） ============ */
+    /* ============ 選択肢（最下部） ============ */
     .choicesWrap{
       position:fixed;
       left: 0;
       right: 0;
       bottom: var(--choices-bottom);
       padding: 0 16px;
-      z-index: 80;
+      z-index: 160;
     }
     .choices{
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px 14px;
+      gap: 12px 12px; /* 少し詰める */
       max-width: 760px;
       margin: 0 auto;
     }
+
+    /* ====== チーギュウ風：ポップ4色ボタン ====== */
     .choice{
       height: var(--choice-height);
-      border-radius: 26px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.55);
+      border-radius: 18px;                 /* 角丸ちょい小さく */
+      border: none;
       color:#fff;
       font-size: var(--choice-font);
       font-weight: 900;
-      letter-spacing: .06em;
+      letter-spacing: .04em;
+
       display:flex;
       align-items:center;
       justify-content:center;
-      box-shadow: 0 18px 40px rgba(0,0,0,.22);
+
+      box-shadow: 0 14px 30px rgba(0,0,0,.22);
       cursor:pointer;
       user-select:none;
-      backdrop-filter: blur(6px);
+
+      text-shadow: 0 2px 10px rgba(0,0,0,.22);
     }
-    .choice:active{ transform: translateY(1px); background: rgba(0,0,0,.65); }
+    /* 位置で色固定（見た目が安定してポップ） */
+    .choices .choice:nth-child(1){ background:#7a3ff2; } /* 紫 */
+    .choices .choice:nth-child(2){ background:#e03b3b; } /* 赤 */
+    .choices .choice:nth-child(3){ background:#7a8791; } /* グレー */
+    .choices .choice:nth-child(4){ background:#f5a623; } /* オレンジ */
+
+    .choice:active{
+      transform: translateY(2px);
+      filter: brightness(.96);
+    }
 
     /* トースト */
     .toast{
@@ -234,10 +269,10 @@
       color:#fff;
       padding: 10px 14px;
       border-radius: 999px;
-      border:1px solid rgba(255,255,255,.14);
-      font-weight:800;
+      border:1px solid rgba(255,255,255,.16);
+      font-weight:900;
       letter-spacing:.06em;
-      z-index: 120;
+      z-index: 220;
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
@@ -249,7 +284,7 @@
     @media (max-height: 740px){
       :root{
         --paper-height: 28vh;
-        --choice-height: 10vh;
+        --choice-height: clamp(52px, 7.2vh, 66px);
       }
     }
   </style>
@@ -275,7 +310,7 @@
       </button>
     </div>
 
-    <!-- 吹き出し（透明・最上部） -->
+    <!-- 吹き出し（透明・最上部 / topbarの下） -->
     <div class="bubble">
       <p class="q" id="questionText">どこだと思う？</p>
       <div class="stageBadge" id="stageBadge">STAGE 1</div>
@@ -417,6 +452,7 @@
     renderQuestion();
     startTimer();
 
+    // 画面スクロール抑止（iOS対策）
     document.addEventListener("touchmove", (e)=>{ e.preventDefault(); }, { passive:false });
   </script>
 </body>
