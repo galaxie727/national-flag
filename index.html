@@ -8,10 +8,9 @@
 <style>
 :root{
   --bg-image: url("chi_base.png");
-
   --topbar-h: 56px;
 
-  --paper-top: calc(var(--topbar-h) + env(safe-area-inset-top) + 64px);
+  --paper-top: 64px;          /* ← ゲーム領域内での固定位置 */
   --paper-width: 88vw;
   --paper-height: 30vh;
 
@@ -26,27 +25,27 @@ html,body{
   height:100%;
   font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   background:#000;
-}
-
-.screen{
-  position:relative;
-  height:100svh;
   overflow:hidden;
 }
 
-/* ===== トップバー（タイマーのみ） ===== */
+/* ===== 画面を分割（これが本命） ===== */
+.app{
+  height:100dvh; /* iOSで一番安定 */
+  display:flex;
+  flex-direction:column;
+}
+
+/* ===== トップバー ===== */
 .topbar{
-  position:fixed;
-  top:0; left:0; right:0;
+  flex: 0 0 auto;
   height: calc(var(--topbar-h) + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top);
   background:#000;
   display:flex;
   align-items:center;
   justify-content:center;
-  z-index:100;
+  z-index:10;
 }
-
 .timer{
   color:#fff;
   font-weight:900;
@@ -54,26 +53,31 @@ html,body{
   font-size:20px;
 }
 
-/* ===== 背景（トップバー下から） ===== */
+/* ===== ゲーム領域（ここがトップバー下スタート） ===== */
+.game{
+  flex: 1 1 auto;
+  position:relative;
+  overflow:hidden;
+}
+
+/* 背景は game の中にベタ貼り（トップバーに絶対侵入しない） */
 .bg{
   position:absolute;
-  top: calc(var(--topbar-h) + env(safe-area-inset-top));
-  left:0; right:0; bottom:0;
+  inset:0;
   background-image: var(--bg-image);
   background-size: cover;
   background-position: center;
 }
 
-/* ===== 女の子文言（透明バブル） ===== */
+/* 女の子文言（透明バブル） */
 .bubble{
-  position:fixed;
-  top: calc(var(--topbar-h) + env(safe-area-inset-top) + 8px);
+  position:absolute;
+  top: 10px;
   left:4vw;
   width:92vw;
-  z-index:90;
+  z-index:5;
   pointer-events:none;
 }
-
 .bubble p{
   margin:0;
   font-size: clamp(26px,6.2vw,44px);
@@ -84,7 +88,7 @@ html,body{
     0 1px 0 rgba(0,0,0,.4);
 }
 
-/* ===== 旗（画用紙） ===== */
+/* 旗（画用紙） */
 .paper{
   position:absolute;
   top: var(--paper-top);
@@ -97,8 +101,8 @@ html,body{
   align-items:center;
   justify-content:center;
   box-shadow: 0 22px 60px rgba(0,0,0,.25);
+  z-index:4;
 }
-
 .paper img{
   width:100%;
   height:100%;
@@ -106,15 +110,14 @@ html,body{
   padding:20px;
 }
 
-/* ===== 選択肢 ===== */
+/* 選択肢 */
 .choicesWrap{
-  position:fixed;
+  position:absolute;
   left:0; right:0;
   bottom: var(--choices-bottom);
   padding:0 16px;
-  z-index:80;
+  z-index:6;
 }
-
 .choices{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -122,7 +125,6 @@ html,body{
   max-width:760px;
   margin:0 auto;
 }
-
 .choice{
   height: var(--choice-height);
   border-radius:26px;
@@ -132,51 +134,45 @@ html,body{
   font-weight:900;
   letter-spacing:.08em;
   cursor:pointer;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
   box-shadow:
     0 10px 24px rgba(0,0,0,.25),
     inset 0 -3px 0 rgba(0,0,0,.18);
-
   transition: transform .06s ease, filter .06s ease;
 }
-
-.choice:active{
-  transform: translateY(2px);
-  filter: brightness(.92);
-}
+.choice:active{ transform: translateY(2px); filter: brightness(.92); }
 
 /* ポップカラー */
-.color-0{ background:#7c4dff; } /* 紫 */
-.color-1{ background:#e53935; } /* 赤 */
-.color-2{ background:#26a69a; } /* 緑 */
+.color-0{ background:#7c4dff; }           /* 紫 */
+.color-1{ background:#e53935; }           /* 赤 */
+.color-2{ background:#26a69a; }           /* 緑 */
 .color-3{ background:#fbc02d; color:#333; } /* 黄 */
-
 </style>
 </head>
 
 <body>
-<div class="screen">
+<div class="app">
 
   <div class="topbar">
     <div class="timer"><span id="time">0.0</span>s</div>
   </div>
 
-  <div class="bg"></div>
+  <div class="game">
+    <div class="bg"></div>
 
-  <div class="bubble">
-    <p>どこだと思う？</p>
-  </div>
+    <div class="bubble">
+      <p>どこだと思う？</p>
+    </div>
 
-  <div class="paper">
-    <img id="flag" src="flags/usa.png" alt="flag">
-  </div>
+    <div class="paper">
+      <img id="flag" src="flags/usa.png" alt="flag">
+    </div>
 
-  <div class="choicesWrap">
-    <div class="choices" id="choices"></div>
+    <div class="choicesWrap">
+      <div class="choices" id="choices"></div>
+    </div>
   </div>
 
 </div>
@@ -199,9 +195,7 @@ setInterval(()=>{
     ((performance.now()-start)/1000).toFixed(1);
 },100);
 
-function shuffle(a){
-  return a.sort(()=>Math.random()-0.5);
-}
+function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
 
 function render(){
   const pick = shuffle([...FLAGS]).slice(0,4);
@@ -217,7 +211,6 @@ function render(){
     wrap.appendChild(b);
   });
 }
-
 render();
 </script>
 </body>
