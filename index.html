@@ -1,525 +1,452 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>国旗大戦（仮）SOLO</title>
-  <style>
-    :root{
-      --bg:#000;
-      --card:#ffffff;
-      --card2:#f3f3f3;
-      --ink:#111;
-      --muted:#666;
-      --radius:26px;
-      --radius2:18px;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --shadow2: 0 8px 22px rgba(0,0,0,.28);
-    }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      background:var(--bg);
-      color:#fff;
-      font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
-      overflow-x:hidden;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>国旗大戦（仮）SOLO</title>
+ explains no>
+<style>
+  :root{
+    --bg:#000;
+    --panel: rgba(0,0,0,.55);
+    --panel2: rgba(0,0,0,.35);
+    --white: #fff;
+    --soft: rgba(255,255,255,.08);
+    --stroke: rgba(255,255,255,.18);
+    --radius: 22px;
+    --radius2: 28px;
+    --topH: 64px;
+  }
 
-    /* ===== 背景（チー娘） ===== */
-    #bgGirl{
-      position:fixed;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:cover;         /* 画面いっぱい */
-      object-position:center;   /* 中心 */
-      z-index:0;
-      filter: saturate(1.05) contrast(1.02);
-      transform: translateZ(0);
-    }
-    /* うっすら暗幕（必要なら強く） */
-    #bgDim{
-      position:fixed;
-      inset:0;
-      z-index:1;
-      background: radial-gradient(ellipse at 50% 30%, rgba(0,0,0,.15), rgba(0,0,0,.55));
-      pointer-events:none;
-    }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; background:var(--bg); color:#fff; font-family: -apple-system, system-ui, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+  body{
+    overflow-x:hidden;
+  }
 
-    /* ===== UIラッパ（前面） ===== */
-    #app{
-      position:relative;
-      z-index:2; /* 背景より前 */
-      min-height:100vh;
-      padding: calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 18px);
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-      max-width: 560px;
-      margin: 0 auto;
-    }
+  /* 背景：チー娘を「最背面」に固定 */
+  body::before{
+    content:"";
+    position: fixed;
+    inset: 0;
+    background: url("chi_base.png") center center / cover no-repeat;
+    filter: saturate(1.02);
+    z-index: -2;
+    transform: translateZ(0);
+  }
+  /* うっすら暗幕（UI可読性） */
+  body::after{
+    content:"";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 15%, rgba(0,0,0,.10), rgba(0,0,0,.65) 70%, rgba(0,0,0,.78));
+    z-index: -1;
+    pointer-events:none;
+  }
 
-    /* ===== 上部メニュー（外に出す・小さめ） ===== */
-    .topbar{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-    }
-    .pillRow{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .pill{
-      height:44px;
-      padding: 0 14px;
-      border-radius: 999px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      border:1px solid rgba(255,255,255,.18);
-      background: rgba(0,0,0,.55);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 6px 16px rgba(0,0,0,.25);
-      color:#fff;
-      user-select:none;
-      font-weight:700;
-      letter-spacing:.06em;
-      font-size:14px;
-    }
-    .pill .label{
-      font-weight:800;
-      opacity:.65;
-      font-size:12px;
-      letter-spacing:.14em;
-    }
-    .pill .value{
-      font-size:16px;
-      letter-spacing:.06em;
-    }
-    .btn{
-      cursor:pointer;
-      border:none;
-      outline:none;
-    }
-    .btn:active{ transform: translateY(1px); }
+  .app{
+    min-height: 100dvh;
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+    padding: calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 14px);
+  }
 
-    /* ===== 吹き出し ===== */
-    .speech{
-      position:relative;
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.88);
-      color:var(--ink);
-      box-shadow: var(--shadow2);
-      padding: 18px 18px;
-      font-weight:900;
-      font-size: clamp(22px, 5.2vw, 34px);
-      letter-spacing:.02em;
-    }
-    .speech:after{
-      content:"";
-      position:absolute;
-      left:34px;
-      bottom:-10px;
-      width:0;height:0;
-      border-left: 14px solid transparent;
-      border-right: 14px solid transparent;
-      border-top: 14px solid rgba(255,255,255,.88);
-      filter: drop-shadow(0 6px 8px rgba(0,0,0,.12));
-    }
-    .stageBadge{
-      position:absolute;
-      right:12px;
-      top:10px;
-      height:44px;
-      padding:0 16px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.35);
-      color:#fff;
-      display:flex;
-      align-items:center;
-      font-weight:900;
-      letter-spacing:.12em;
-      font-size:14px;
-      border:1px solid rgba(255,255,255,.25);
-      backdrop-filter: blur(8px);
-    }
+  /* 上部メニュー（小さめ・外に出す） */
+  .topbar{
+    height: var(--topH);
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .pillRow{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    width:100%;
+  }
+  .pill{
+    flex: 1 1 auto;
+    height: 46px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.55);
+    border: 1px solid rgba(255,255,255,.14);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 10px;
+    letter-spacing:.12em;
+    font-weight:700;
+    text-transform: uppercase;
+    font-size: 15px;
+    backdrop-filter: blur(10px);
+  }
+  .pill span.small{
+    font-weight:800;
+    letter-spacing:.18em;
+    opacity:.85;
+    font-size: 13px;
+  }
+  .pill strong{
+    font-size: 18px;
+    letter-spacing:.06em;
+  }
+  .pillBtn{
+    flex: 0 0 118px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .pillBtn:active{ transform: translateY(1px); }
 
-    /* ===== 旗カード（女の子を隠さないように“必要最小”の白枠） ===== */
-    .flagCard{
-      border-radius: var(--radius);
-      background: rgba(255,255,255,.85);
-      box-shadow: var(--shadow);
-      padding: 14px;
-    }
-    .paper{
-      border-radius: 18px;
-      background: #fff;
-      padding: 16px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height: 220px;
-    }
-    /* ここにcanvasが入る */
-    #flagCanvas{
-      width:100%;
-      height: 220px; /* 旗を大きく */
-      display:block;
-      border-radius: 12px;
-      background: #f7f7f7;
-    }
+  /* メイン領域 */
+  .main{
+    flex: 1 1 auto;
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+  }
 
-    /* ===== 選択肢（下に・高さを減らす） ===== */
-    .choices{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-      margin-top: 2px;
-    }
-    .choiceBtn{
-      height: 70px;              /* 低め */
-      border-radius: 18px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.58);
-      backdrop-filter: blur(8px);
-      color:#fff;
-      font-weight:900;
-      font-size: clamp(18px, 4.6vw, 26px);
-      letter-spacing:.04em;
-      box-shadow: 0 10px 22px rgba(0,0,0,.25);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 0 12px;
-    }
-    .choiceBtn.correct{
-      background: rgba(30,170,90,.72);
-      border-color: rgba(255,255,255,.22);
-    }
-    .choiceBtn.wrong{
-      background: rgba(200,60,60,.72);
-      border-color: rgba(255,255,255,.22);
-    }
+  /* 吹き出し */
+  .speech{
+    position: relative;
+    border-radius: 26px;
+    background: rgba(245,245,245,.92);
+    color:#111;
+    padding: 18px 18px;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: .04em;
+    line-height: 1.05;
+    box-shadow: 0 10px 30px rgba(0,0,0,.28);
+  }
+  .speech::after{
+    content:"";
+    position:absolute;
+    left: 38px;
+    bottom: -14px;
+    width:0;height:0;
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-top: 18px solid rgba(245,245,245,.92);
+    filter: drop-shadow(0 6px 6px rgba(0,0,0,.12));
+  }
+  .stageBadge{
+    position:absolute;
+    right: 14px;
+    top: 10px;
+    height: 46px;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.35);
+    border: 1px solid rgba(0,0,0,.10);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight: 900;
+    letter-spacing: .18em;
+    color:#fff;
+    text-transform: uppercase;
+    font-size: 16px;
+  }
 
-    /* ちょい下余白（スクロール時に女の子が見える余地） */
-    .spacer{ height: 10px; }
+  /* 国旗カード（大きめ） */
+  .flagCard{
+    position: relative;
+    border-radius: 28px;
+    background: rgba(245,245,245,.92);
+    box-shadow: 0 16px 50px rgba(0,0,0,.35);
+    padding: 18px;
+    overflow:hidden;
+  }
 
-    /* 小さい画面調整 */
-    @media (max-width: 380px){
-      .pill{ height:40px; padding:0 12px; }
-      .paper{ min-height: 200px; }
-      #flagCanvas{ height: 200px; }
-      .choiceBtn{ height: 64px; }
-    }
-  </style>
+  /* 画用紙っぽい枠 */
+  .paper{
+    position: relative;
+    border-radius: 18px;
+    background: #fff;
+    padding: 18px;
+    box-shadow:
+      inset 0 0 0 2px rgba(0,0,0,.06),
+      0 10px 24px rgba(0,0,0,.14);
+  }
+
+  /* 国旗：自動トリム後の画像を “画用紙の中心に” */
+  .flagWrap{
+    width: 100%;
+    aspect-ratio: 16/10;  /* ここで「大きく見せる」 */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: #fff;
+    border-radius: 12px;
+    overflow:hidden;
+  }
+  .flagImg{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;   /* 画用紙内で均等余白 */
+    image-rendering: auto;
+    display:block;
+  }
+
+  /* 選択肢：下寄せ＆高さ低め */
+  .answers{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .ansBtn{
+    height: 70px; /* ←「高さを無くす」 */
+    border-radius: 18px;
+    background: rgba(0,0,0,.55);
+    border: 1px solid rgba(255,255,255,.16);
+    color:#fff;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    backdrop-filter: blur(10px);
+    cursor:pointer;
+    user-select:none;
+  }
+  .ansBtn:active{
+    transform: translateY(1px);
+    background: rgba(255,255,255,.10);
+  }
+
+  /* 画面下に固定したい場合の余白確保 */
+  .spacer{
+    height: 2px;
+  }
+
+  /* 小さめ端末調整 */
+  @media (max-width: 390px){
+    .speech{ font-size: 24px; }
+    .ansBtn{ font-size: 24px; height: 66px; }
+    .pill{ height: 44px; }
+  }
+</style>
 </head>
 <body>
-
-  <!-- 背景（この1枚が「裏」になるので、絶対に隠れない） -->
-  <img id="bgGirl" src="chi_base.png" alt="chi" />
-  <div id="bgDim"></div>
-
-  <div id="app">
-    <!-- 上部メニュー（画面外に出す・小さめ） -->
+  <div class="app">
+    <!-- 上部メニュー（外） -->
     <div class="topbar">
       <div class="pillRow">
-        <div class="pill"><span class="label">MODE</span><span class="value" id="modeLabel">SOLO</span></div>
-        <div class="pill"><span class="label">TIME</span><span class="value" id="timeLabel">0.0 s</span></div>
-      </div>
-      <button class="pill btn" id="retryBtn" type="button"><span class="value">RETRY</span></button>
-    </div>
-
-    <!-- 吹き出し -->
-    <div class="speech" id="speech">
-      どこだと思う？
-      <div class="stageBadge" id="stageBadge">STAGE 1</div>
-    </div>
-
-    <!-- 旗カード -->
-    <div class="flagCard">
-      <div class="paper">
-        <canvas id="flagCanvas" width="1200" height="700"></canvas>
+        <div class="pill" id="modePill"><span class="small">MODE</span><strong>SOLO</strong></div>
+        <div class="pill" id="timePill"><span class="small">TIME</span><strong id="timeTxt">0.0</strong><span class="small">s</span></div>
+        <div class="pill pillBtn" id="retryBtn"><strong>RETRY</strong></div>
       </div>
     </div>
 
-    <!-- 選択肢（下） -->
-    <div class="choices" id="choices"></div>
+    <div class="main">
+      <!-- 吹き出し -->
+      <div class="speech" id="speech">
+        <div class="stageBadge" id="stageTxt">STAGE 1</div>
+        <span id="qTxt">どこだと思う？</span>
+      </div>
 
-    <div class="spacer"></div>
+      <!-- 国旗カード -->
+      <div class="flagCard">
+        <div class="paper">
+          <div class="flagWrap">
+            <img class="flagImg" id="flagImg" alt="flag" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 選択肢（下） -->
+      <div class="answers" id="answers"></div>
+
+      <div class="spacer"></div>
+    </div>
   </div>
 
-  <script>
-    /*************************************************************
-     * 画像ファイル（最低限）
-     * - chi_base.png   ← 背景のチー娘
-     * - flags/jp.png
-     * - flags/us.png
-     * - flags/fr.png
-     * - flags/br.png
-     * - flags/au.png
-     *
-     * 追加するなら flags/xx.png を増やして下の FLAGS に足すだけ
-     *************************************************************/
+<script>
+/* =========================
+   データ（とりあえず5枚）
+   ========================= */
+const QUESTIONS = [
+  { id:"jp", name:"日本",      file:"jp.png" },
+  { id:"us", name:"アメリカ",  file:"us.png" },
+  { id:"fr", name:"フランス",  file:"fr.png" },
+  { id:"br", name:"ブラジル",  file:"br.png" },
+  { id:"au", name:"オーストラリア", file:"au.png" },
+];
 
-    const FLAGS = [
-      { code:"jp", name:"日本",      src:"flags/jp.png" },
-      { code:"us", name:"アメリカ",  src:"flags/us.png" },
-      { code:"fr", name:"フランス",  src:"flags/fr.png" },
-      { code:"br", name:"ブラジル",  src:"flags/br.png" },
-      { code:"au", name:"オーストラリア", src:"flags/au.png" },
-      // ここから増やせる例:
-      // { code:"cn", name:"中国", src:"flags/cn.png" },
-      // { code:"kr", name:"韓国", src:"flags/kr.png" },
-    ];
+/* 4択を作る：正解 + ランダム3つ */
+function makeChoices(correctIdx){
+  const correct = QUESTIONS[correctIdx];
+  const pool = QUESTIONS.filter((_,i)=>i!==correctIdx);
+  shuffle(pool);
+  const picks = pool.slice(0,3).concat([correct]);
+  shuffle(picks);
+  return picks;
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
 
-    const state = {
-      stage: 1,
-      startedAt: null,
-      timerId: null,
-      current: null,         // {correct, options[]}
-      cacheCropped: new Map()// src -> dataURL
-    };
+/* =========================
+   画像の白フチを自動トリム
+   =========================
+   - PNG/JPGどっちでもOK
+   - 「ほぼ白」を余白として削る
+*/
+async function trimImageToDataURL(url){
+  const img = await loadImg(url);
 
-    const elTime = document.getElementById("timeLabel");
-    const elStage = document.getElementById("stageBadge");
-    const elChoices = document.getElementById("choices");
-    const canvas = document.getElementById("flagCanvas");
-    const ctx = canvas.getContext("2d");
+  const c = document.createElement('canvas');
+  const w = img.naturalWidth, h = img.naturalHeight;
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently:true });
+  ctx.drawImage(img, 0, 0);
 
-    // ===== ユーティリティ =====
-    const shuffle = (arr) => {
-      const a = arr.slice();
-      for(let i=a.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [a[i],a[j]]=[a[j],a[i]];
+  const data = ctx.getImageData(0,0,w,h).data;
+
+  // 「白っぽい」を余白扱い（閾値）
+  const isBg = (r,g,b,a)=>{
+    if(a < 10) return true; // 透明は余白
+    const t = 245;          // 白判定
+    return (r>=t && g>=t && b>=t);
+  };
+
+  let minX=w, minY=h, maxX=0, maxY=0;
+  let found=false;
+
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const i = (y*w + x)*4;
+      const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+      if(!isBg(r,g,b,a)){
+        found=true;
+        if(x<minX) minX=x;
+        if(y<minY) minY=y;
+        if(x>maxX) maxX=x;
+        if(y>maxY) maxY=y;
       }
-      return a;
-    };
-    const pickOne = (arr) => arr[Math.floor(Math.random()*arr.length)];
-    const sleep = (ms) => new Promise(r=>setTimeout(r, ms));
-
-    function startTimer(){
-      stopTimer();
-      state.startedAt = performance.now();
-      state.timerId = setInterval(()=>{
-        const t = (performance.now() - state.startedAt)/1000;
-        elTime.textContent = t.toFixed(1) + " s";
-      }, 100);
     }
-    function stopTimer(){
-      if(state.timerId) clearInterval(state.timerId);
-      state.timerId = null;
-    }
+  }
 
-    // ===== 旗の余白自動トリミング（白背景を削る） =====
-    async function loadAndAutoCrop(src){
-      if(state.cacheCropped.has(src)) return state.cacheCropped.get(src);
+  // 何も見つからないなら元のまま
+  if(!found) return url;
 
-      const img = await loadImage(src);
+  // 少しだけ余白を残す（見た目の呼吸）
+  const pad = Math.round(Math.min(w,h)*0.01); // 1%
+  minX = Math.max(0, minX - pad);
+  minY = Math.max(0, minY - pad);
+  maxX = Math.min(w-1, maxX + pad);
+  maxY = Math.min(h-1, maxY + pad);
 
-      // 元画像を一旦 canvas に描画
-      const w = img.naturalWidth || img.width;
-      const h = img.naturalHeight || img.height;
+  const cw = maxX - minX + 1;
+  const ch = maxY - minY + 1;
 
-      const tmp = document.createElement("canvas");
-      tmp.width = w;
-      tmp.height = h;
-      const tctx = tmp.getContext("2d");
-      tctx.drawImage(img, 0, 0);
+  const out = document.createElement('canvas');
+  out.width = cw; out.height = ch;
+  const octx = out.getContext('2d');
+  octx.drawImage(c, minX, minY, cw, ch, 0, 0, cw, ch);
 
-      const data = tctx.getImageData(0,0,w,h).data;
+  return out.toDataURL('image/png');
+}
 
-      // “白っぽい”を背景としてみなす（ゆるめ）
-      const isBg = (r,g,b,a) => {
-        if(a < 10) return true; // ほぼ透明も背景
-        const lum = (r+g+b)/3;
-        return lum > 245;       // ほぼ白
-      };
+function loadImg(url){
+  return new Promise((res,rej)=>{
+    const im = new Image();
+    im.crossOrigin = "anonymous";
+    im.onload = ()=>res(im);
+    im.onerror = rej;
+    im.src = url;
+  });
+}
 
-      let minX=w, minY=h, maxX=0, maxY=0;
-      let found=false;
+/* =========================
+   ゲーム進行
+   ========================= */
+const els = {
+  flagImg: document.getElementById('flagImg'),
+  answers: document.getElementById('answers'),
+  stageTxt: document.getElementById('stageTxt'),
+  timeTxt: document.getElementById('timeTxt'),
+  retryBtn: document.getElementById('retryBtn'),
+};
 
-      for(let y=0;y<h;y++){
-        for(let x=0;x<w;x++){
-          const i = (y*w + x)*4;
-          const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
-          if(!isBg(r,g,b,a)){
-            found=true;
-            if(x<minX) minX=x;
-            if(y<minY) minY=y;
-            if(x>maxX) maxX=x;
-            if(y>maxY) maxY=y;
-          }
-        }
+let stage = 1;
+let currentIdx = 0;
+let startTime = 0;
+let rafId = null;
+
+/* ステージの出題順：とりあえずランダム */
+let order = [];
+
+function reset(){
+  stage = 1;
+  order = [...Array(QUESTIONS.length)].map((_,i)=>i);
+  shuffle(order);
+  startTime = performance.now();
+  tick();
+  nextQuestion();
+}
+
+function tick(){
+  cancelAnimationFrame(rafId);
+  const loop = ()=>{
+    const t = (performance.now() - startTime)/1000;
+    els.timeTxt.textContent = t.toFixed(1);
+    rafId = requestAnimationFrame(loop);
+  };
+  rafId = requestAnimationFrame(loop);
+}
+
+async function nextQuestion(){
+  // ループ（質問数を増やしたらここを調整）
+  currentIdx = order[(stage-1) % order.length];
+
+  els.stageTxt.textContent = `STAGE ${stage}`;
+
+  // 国旗ロード＋自動トリム
+  const q = QUESTIONS[currentIdx];
+  const trimmed = await trimImageToDataURL(q.file);
+  els.flagImg.src = trimmed;
+
+  // 4択生成
+  const choices = makeChoices(currentIdx);
+  renderChoices(choices, q.name);
+}
+
+function renderChoices(choices, correctName){
+  els.answers.innerHTML = "";
+  choices.forEach(ch=>{
+    const b = document.createElement('button');
+    b.className = "ansBtn";
+    b.type = "button";
+    b.textContent = ch.name;
+    b.addEventListener('click', ()=>{
+      const ok = (ch.name === correctName);
+      if(ok){
+        stage++;
+        nextQuestion();
+      }else{
+        // 間違い時：軽くフィードバック（叱らない）
+        b.style.background = "rgba(255,255,255,.10)";
+        b.style.borderColor = "rgba(255,255,255,.25)";
+        setTimeout(()=>{ b.removeAttribute("style"); }, 220);
       }
-
-      // 何も見つからなければそのまま
-      if(!found){
-        state.cacheCropped.set(src, src);
-        return src;
-      }
-
-      // 少しだけ余白を残す（ピッタリ切りすぎ防止）
-      const pad = Math.round(Math.min(w,h) * 0.01); // 1%
-      minX = Math.max(0, minX - pad);
-      minY = Math.max(0, minY - pad);
-      maxX = Math.min(w-1, maxX + pad);
-      maxY = Math.min(h-1, maxY + pad);
-
-      const cw = maxX - minX + 1;
-      const ch = maxY - minY + 1;
-
-      const out = document.createElement("canvas");
-      out.width = cw;
-      out.height = ch;
-      out.getContext("2d").drawImage(tmp, minX, minY, cw, ch, 0,0,cw,ch);
-
-      const dataUrl = out.toDataURL("image/png");
-      state.cacheCropped.set(src, dataUrl);
-      return dataUrl;
-    }
-
-    function loadImage(src){
-      return new Promise((resolve, reject)=>{
-        const img = new Image();
-        img.onload = ()=> resolve(img);
-        img.onerror = reject;
-        img.src = src;
-      });
-    }
-
-    // ===== 旗を「画用紙の中心」に、上下左右の白を均等に =====
-    async function renderFlag(flagSrc){
-      // 自動トリミングした画像を読み込み
-      const croppedSrc = await loadAndAutoCrop(flagSrc);
-      const img = await loadImage(croppedSrc);
-
-      // キャンバスを白い“画用紙”っぽくクリア
-      const W = canvas.width, H = canvas.height;
-      ctx.clearRect(0,0,W,H);
-
-      // うっすら背景（紙に馴染む）
-      ctx.fillStyle = "#f7f7f7";
-      ctx.fillRect(0,0,W,H);
-
-      // “紙の中での余白”を均等に（＝内側パディング）
-      const padX = Math.round(W * 0.08);
-      const padY = Math.round(H * 0.10);
-
-      const boxW = W - padX*2;
-      const boxH = H - padY*2;
-
-      // 画像を box 内に “contain” で最大化
-      const iw = img.naturalWidth || img.width;
-      const ih = img.naturalHeight || img.height;
-      const scale = Math.min(boxW/iw, boxH/ih);
-
-      const dw = iw * scale;
-      const dh = ih * scale;
-
-      const dx = (W - dw) / 2;
-      const dy = (H - dh) / 2;
-
-      // 影（紙に置いた感じ）
-      ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,.18)";
-      ctx.shadowBlur = 18;
-      ctx.shadowOffsetY = 10;
-
-      // 角丸クリップして描画
-      roundRect(ctx, dx, dy, dw, dh, 18);
-      ctx.clip();
-      ctx.drawImage(img, dx, dy, dw, dh);
-      ctx.restore();
-
-      // 枠線（薄く）
-      ctx.save();
-      ctx.strokeStyle = "rgba(0,0,0,.08)";
-      ctx.lineWidth = 2;
-      roundRect(ctx, dx, dy, dw, dh, 18);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function roundRect(c, x, y, w, h, r){
-      const rr = Math.min(r, w/2, h/2);
-      c.beginPath();
-      c.moveTo(x+rr, y);
-      c.arcTo(x+w, y, x+w, y+h, rr);
-      c.arcTo(x+w, y+h, x, y+h, rr);
-      c.arcTo(x, y+h, x, y, rr);
-      c.arcTo(x, y, x+w, y, rr);
-      c.closePath();
-    }
-
-    // ===== 問題生成 =====
-    function makeQuestion(){
-      const correct = pickOne(FLAGS);
-      const wrongPool = FLAGS.filter(f => f.code !== correct.code);
-      const wrongs = shuffle(wrongPool).slice(0,3);
-      const options = shuffle([correct, ...wrongs]);
-
-      state.current = { correct, options };
-      elStage.textContent = `STAGE ${state.stage}`;
-      // 吹き出し文言（固定）
-      document.getElementById("speech").childNodes[0].textContent = "どこだと思う？";
-
-      // 選択肢描画
-      elChoices.innerHTML = "";
-      options.forEach(opt=>{
-        const b = document.createElement("button");
-        b.className = "choiceBtn btn";
-        b.type = "button";
-        b.textContent = opt.name;
-        b.addEventListener("click", ()=> onAnswer(b, opt));
-        elChoices.appendChild(b);
-      });
-
-      // 旗描画（大きく）
-      renderFlag(correct.src);
-    }
-
-    async function onAnswer(btn, opt){
-      // 多重クリック防止
-      [...elChoices.querySelectorAll("button")].forEach(b=> b.disabled = true);
-
-      const ok = opt.code === state.current.correct.code;
-      btn.classList.add(ok ? "correct" : "wrong");
-
-      // 少しだけ見せる
-      await sleep(260);
-
-      // 次へ
-      state.stage += 1;
-      [...elChoices.querySelectorAll("button")].forEach(b=>{
-        b.disabled = false;
-        b.classList.remove("correct","wrong");
-      });
-      makeQuestion();
-      startTimer(); // ステージごとにタイムをリセットしたいならON（今はその仕様）
-    }
-
-    // ===== RETRY =====
-    document.getElementById("retryBtn").addEventListener("click", ()=>{
-      state.stage = 1;
-      makeQuestion();
-      startTimer();
     });
+    els.answers.appendChild(b);
+  });
+}
 
-    // 初期化
-    (async function init(){
-      // 背景読み込み失敗時の保険
-      document.getElementById("bgGirl").addEventListener("error", ()=>{
-        console.warn("chi_base.png が見つからない可能性");
-      });
+els.retryBtn.addEventListener('click', reset);
 
-      makeQuestion();
-      startTimer();
-    })();
-  </script>
+/* 起動 */
+reset();
+</script>
 </body>
 </html>
