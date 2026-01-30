@@ -442,6 +442,40 @@ header{
   text-align: center;
   margin: 0 auto;
 }
+/* ★国旗レイヤー（木板の内側パネルに重ねる） */
+#gameScreen #panelUI{ z-index:12; }
+
+#panelUI{
+  position:absolute;
+  left: 18%;
+  top: 63%;
+  width: 64%;
+  height: 15%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  pointer-events:none;
+  user-select:none;
+}
+#flagLayer{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.25));
+}
+#countryLabel{
+  position:absolute;
+  left:0; right:0;
+  bottom:-24px;
+  text-align:center;
+  font-weight:900;
+  letter-spacing:.12em;
+  font-size:12px;
+  opacity:.92;
+  text-shadow:0 10px 28px rgba(0,0,0,.75);
+  display:none; /* 国名出すなら block */
+}
 </style>
 </head>
 
@@ -768,6 +802,47 @@ const GIRLS = [
 function getGirlByKey(k){ return GIRLS.find(x=>x.key===k) || GIRLS[0]; }
 let selectedGirlKey = getSavedGirl();
 function getSelectedGirl(){ return getGirlByKey(selectedGirlKey); }
+
+/* =========================
+   FLAGS (NATIONAL FLAG)
+========================= */
+const FLAGS = [
+  { key:"japan",     label:"日本",           img:"japan.png" },
+  { key:"usa",       label:"アメリカ",       img:"usa.png" },
+  { key:"france",    label:"フランス",       img:"france.png" },
+  { key:"australia", label:"オーストラリア", img:"australia.png" },
+  { key:"brazil",    label:"ブラジル",       img:"brazil.png" }
+];
+
+function showFlagByKey(k){
+  const v = FLAGS.find(x=>x.key===k);
+  if(!v) return;
+  const ui  = document.getElementById("panelUI");
+  const img = document.getElementById("flagLayer");
+  const lab = document.getElementById("countryLabel");
+  if(!ui || !img) return;
+
+  img.src = v.img;
+  img.alt = v.label;
+
+  if(lab){
+    lab.textContent = v.label;
+    // 国名出したいなら next 行をON
+    // lab.style.display = "block";
+  }
+
+  ui.classList.remove("hide");
+}
+
+function showRandomFlag(){
+  const v = FLAGS[Math.floor(Math.random()*FLAGS.length)];
+  showFlagByKey(v.key);
+}
+
+function hideFlag(){
+  const ui = document.getElementById("panelUI");
+  if(ui) ui.classList.add("hide");
+}
 
 /* questions (45) */
 const questions = [
@@ -1325,6 +1400,7 @@ function showQuestion(){
 
   setPlayGirl(pickGirlForPlay());
   applyGameQuestionBg();
+  showRandomFlag();
 
   qEl.classList.add("hide");
   qEl.textContent = playQuestions[i].text;
