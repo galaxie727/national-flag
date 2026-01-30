@@ -93,42 +93,49 @@
     .pill .small{ opacity:.85; font-size:12px; }
     .spacer{ flex:1; }
 
-    /* ====== 内：ゲームエリア（topbarの下から開始） ====== */
-    .game{
-      position:relative;
-      width:100%;
-      height:100svh;
-      padding-top: calc(var(--topbar-h) + env(safe-area-inset-top));  /* ← ここが本命 */
-      overflow:hidden;
-      background:#000;
-    }
+    /* 内：ゲームエリア（topbarの下から開始） */
+.game{
+  position:relative;
+  width:100%;
+  height:100svh;
+  overflow:hidden;
+  background:#000;
 
-    /* 背景（女の子）はゲームエリア内に敷く */
-    .bg{
-      position:absolute;
-      left:0; right:0;
-      top:0; bottom:0;
-      background-image: var(--bg-image);
-      background-size: cover;
-      background-position: center;
-      z-index: 1;
-    }
+  /* padding-top 方式はやめる（ズレ原因になる） */
+  padding-top: 0;
+}
 
-    /* うっすら暗幕（読めるように） */
-    .game::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background: rgba(0,0,0,.10);
-      z-index: 2;
-      pointer-events:none;
-    }
+/* 背景を topbar の下から始める（これが本命） */
+.bg{
+  position:absolute;
+  left:0; right:0;
+  top: calc(var(--topbar-h) + env(safe-area-inset-top));
+  bottom: 0;
+
+  background-image: var(--bg-image);
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+/* 暗幕も同じく topbar 下から */
+.game::before{
+  content:"";
+  position:absolute;
+  left:0; right:0;
+  top: calc(var(--topbar-h) + env(safe-area-inset-top));
+  bottom: 0;
+
+  background: rgba(0,0,0,.10);
+  z-index: 2;
+  pointer-events:none;
+}
 
     /* 吹き出し（透明・ゲームエリアの上） */
     .bubble{
       position:absolute;
       left: var(--bubble-left);
-      top: var(--bubble-top);
+      top: calc(var(--topbar-h) + env(safe-area-inset-top) + 12px);
       width: var(--bubble-width);
       max-width: 760px;
       z-index: 50;
@@ -164,7 +171,7 @@
     .paper{
       position:absolute;
       left: var(--paper-left);
-      top: var(--paper-top);         /* ← 足し算しない */
+      top: calc(var(--topbar-h) + env(safe-area-inset-top) + 78px);
       width: var(--paper-width);
       height: var(--paper-height);
       border-radius: 26px;
@@ -197,7 +204,7 @@
     .choicesWrap{
       position:absolute;
       left:0; right:0;
-      bottom: var(--choices-bottom);
+      bottom: calc(env(safe-area-inset-bottom) + 14px);
       padding: 0 16px;
       z-index: 80;
     }
