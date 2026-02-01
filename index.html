@@ -427,7 +427,22 @@ header{
    ※位置はこの1人の画像に合わせた「初期値」
    ※他の子でズレたらここを微調整するだけ
 ========================= */
-#panelUI{ left:10%; top:10%; width:80%; height:30%; }
+#panelUI{
+  position:absolute;
+  /* 木板の内側パネル位置（初期チューニング） */
+  left: 18%;
+  top: 63%;
+  width: 64%;
+  height: 15%;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+
+  pointer-events:none;
+  user-select:none;
+}
 #flagLayer{
   width:100%;
   height:100%;
